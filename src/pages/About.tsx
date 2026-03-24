@@ -3,8 +3,7 @@ import PartnersCarousel from '../components/PartnersCarousel';
 import { 
   Target, Eye, Heart, 
   ArrowRight, Star, TrendingUp,
-  Calendar,
-  Building2, BookOpen, X
+  Calendar, MessageCircle, BookOpen, X
 } from 'lucide-react';
 import { getFeaturedPost, getRegularPosts, type BlogPost } from '../data/blogPosts';
 import { aboutStats } from '../data/aboutData';
@@ -39,23 +38,11 @@ const About = () => {
   return (
     <div className="min-h-screen page-content bg-white dark:bg-gray-900">
       {/* ===== SEÇÃO HERO - CABEÇALHO PRINCIPAL ===== */}
-      <section className="relative bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white py-24 overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }} />
-        </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-              <Building2 className="h-5 w-5" />
-              <span className="text-sm font-medium">{aboutHero.badge}</span>
-            </div>
-            <p className="text-lg text-gray-300 max-w-3xl mx-auto mb-8">
-              {aboutHero.description}
-            </p>
+      <section className="relative text-white pt-7 overflow-hidden">
+        <div className="relative max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center bg-blue-100 space-x-2 text-blue-900 backdrop-blur-sm rounded-full px-4 py-2">
+            <MessageCircle className="h-5 w-5" />
+            <span className="text-sm font-medium">About US</span>
           </div>
         </div>
       </section>
@@ -68,7 +55,7 @@ const About = () => {
               <div className="mb-12">
                 <div className="flex items-center mb-6">
                   <div className="p-3 bg-blue-100 rounded-xl mr-4">
-                    <Target className="h-8 w-8 text-blue-600" />
+                    <Target className="h-8 w-8 text-blue-900" />
                   </div>
                   <div>
                   <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{missionSection.title}</h2>
@@ -83,7 +70,7 @@ const About = () => {
               <div>
                 <div className="flex items-center mb-6">
                   <div className="p-3 bg-green-100 rounded-xl mr-4">
-                    <Eye className="h-8 w-8 text-green-600" />
+                    <Eye className="h-8 w-8 text-blue-900" />
                   </div>
                   <div>
                   <h2 className="text-3xl font-bold text-gray-900">{visionSection.title}</h2>
@@ -99,7 +86,7 @@ const About = () => {
             <div className="relative">
               <div className="relative rounded-2xl overflow-hidden shadow-2xl">
               <img 
-                src="https://images.pexels.com/photos/1216589/pexels-photo-1216589.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                src="https://ymrindustrial.com/assets/about/3.jpg" 
                 alt="Industrial facility"
                   className="w-full h-96 object-cover"
                 />
@@ -134,8 +121,8 @@ const About = () => {
                 key={value.title}
                 className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 text-center group"
               >
-                <div className={`bg-gradient-to-r ${value.color} p-4 rounded-2xl w-16 h-16 mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                  <value.icon className="h-8 w-8 text-white" />
+                <div className={`bg-gray-100 p-4 rounded-2xl w-16 h-16 mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                  <value.icon className="h-8 w-8 text-blue-900" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">{value.title}</h3>
                 <p className="text-gray-600 leading-relaxed">{value.description}</p>
@@ -163,10 +150,10 @@ const About = () => {
             {aboutStats.map((stat) => (
               <div 
                 key={stat.label}
-                className="text-center bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+                className="text-center rounded-2xl p-8 transition-all duration-300"
               >
                 <div className="flex justify-center mb-4">
-                  <div className="p-3 bg-white/20 rounded-xl">
+                  <div className="p-3 rounded-xl">
                     <stat.icon className="h-8 w-8 text-white" />
                   </div>
                 </div>
@@ -215,7 +202,7 @@ const About = () => {
       </section>
 
       {/* ===== SEÇÃO BLOG ===== */}
-      <section className="py-20 bg-gray-50 dark:bg-gray-800">
+      <section className="py-20 bg-gray-50 dark:bg-gray-800" id="blog">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center space-x-2 bg-blue-100 rounded-full px-4 py-2 mb-6">
@@ -230,7 +217,7 @@ const About = () => {
 
           {/* Featured Post */}
           {featuredPost && (
-            <div className="mb-16">
+            <div className="mb-16"  id={`blog-${featuredPost.id}`}>
               <div className="bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                   <div className="relative">
@@ -287,7 +274,7 @@ const About = () => {
           {/* Regular Posts Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {displayedPosts.map((post) => (
-              <div key={post.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group">
+              <div key={post.id} id={`blog-${post.id}`} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group">
                 <div className="relative">
                   <img 
                     src={post.image} 

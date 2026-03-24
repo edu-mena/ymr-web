@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { contactInfo } from '../data/contactInfo';
 import { contactFaqs } from '../data/contactData';
-import { 
-  MapPin, Send, MessageCircle, Phone, Mail, 
+import {
+  MapPin, Send, MessageCircle, Phone, Mail,
   CheckCircle, AlertCircle, User, Building,
   ChevronDown, ChevronUp, Star
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../services/api';
 
 const Contact = () => {
-  // ===== ESTADO DO FORMULÁRIO =====
-  // Estado para controlar os dados do formulário de contato
-  const [formData, setFormData] = useState({
+  const { isAuthenticated, user } = useAuth();
+
+  type ContactFormData = {
+    fullName: string;
+    email: string;
+    phone: string;
+    company: string;
+    subject: string;
+    message: string;
+  };
+
+  const [formData, setFormData] = useState<ContactFormData>({
     fullName: '',
     email: '',
     phone: '',
@@ -22,37 +33,59 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const nameFromUser = user?.name;
+  const emailFromUser = user?.email;
+  // ===== PRÉ-PREENCHIMENTO PARA UTILIZADORES AUTENTICADOS =====
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-  // ===== FUNÇÕES DE MANIPULAÇÃO DO FORMULÁRIO =====
-  // Função para atualizar os campos do formulário conforme o usuário digita
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const prefill = async () => {
+      try {
+        const res = await apiFetch('/auth/profile');
+        const apiUser = res.user as { name?: string; email?: string; phone?: string; company?: string };
+        setFormData(prev => ({
+          ...prev,
+          fullName: apiUser.name ?? prev.fullName,
+          email:    apiUser.email ?? prev.email,
+          phone:    apiUser.phone ?? prev.phone,
+          company:  apiUser.company ?? prev.company,
+        }));
+      } catch {
+        // Fallback: usa os dados básicos do contexto de auth
+        if (nameFromUser) {
+          setFormData(prev => ({ ...prev, fullName: nameFromUser }));
+        }
+        if (emailFromUser) {
+          setFormData(prev => ({ ...prev, email: emailFromUser }));
+        }
+      }
+    };
+
+    prefill();
+  }, [isAuthenticated, user]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Função para processar o envio do formulário
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus('idle');
-    
+
     try {
-      // Simular envio para API
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
       setSubmitStatus('success');
-      setFormData({
-        fullName: '',
-        email: '',
-        phone: '',
-        company: '',
+      setFormData(prev => ({
+        // Mantém os dados pessoais preenchidos, limpa só subject e message
+        ...prev,
         subject: '',
         message: ''
-      });
-    } catch (error) {
+      }));
+    } catch {
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
@@ -63,12 +96,17 @@ const Contact = () => {
     setExpandedFaq(expandedFaq === index ? null : index);
   };
 
-  // ===== DADOS DE INFORMAÇÕES DE CONTATO =====
-  // Array contendo as informações de contato da empresa
+  const subjectOptions = [
+    { value: '', label: 'Selecione o assunto...' },
+    { value: 'Solicitação de Produto',           label: 'Solicitação de Produto' },
+    { value: 'Relatar Problemas no website',     label: 'Relatar Problemas no Website' },
+    { value: 'Solicitação de Serviço',           label: 'Solicitação de Serviço' },
+    { value: 'Outro',                            label: 'Outro' },
+  ];
 
   return (
     <div className="min-h-screen page-content bg-white dark:bg-gray-900">
-      {/* ===== SEÇÃO HERO - CABEÇALHO PRINCIPAL ===== */}
+      {/* HERO */}
       <section className="relative bg-gray-50 text-white py-6 overflow-hidden">
         <div className="relative max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center bg-blue-100 space-x-2 text-blue-900 backdrop-blur-sm rounded-full px-4 py-2">
@@ -78,11 +116,12 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* ===== SEÇÃO FORMULÁRIO E INFORMAÇÕES DE CONTATO ===== */}
+      {/* FORMULÁRIO + INFO */}
       <section className="pb-10 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            {/* Formulário de Contato */}
+
+            {/* Formulário */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 md:p-8 border border-gray-100 dark:border-gray-700">
               <div className="mb-6 md:mb-8">
                 <div className="flex items-center mb-3 md:mb-4">
@@ -91,34 +130,38 @@ const Contact = () => {
                   </div>
                   <div>
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Send us a Message</h2>
-                    <p className="text-gray-600 dark:text-gray-300 mt-1 text-sm md:text-base">We'll respond within 24 hours</p>
+                    <p className="text-gray-600 dark:text-gray-300 mt-1 text-sm md:text-base">
+                      {isAuthenticated
+                        ? 'Os seus dados foram preenchidos automaticamente.'
+                        : "We'll respond within 24 hours"}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Status Messages */}
               {submitStatus === 'success' && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-3">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
                   <p className="text-green-800 font-medium">Message sent successfully! We'll get back to you soon.</p>
                 </div>
               )}
 
               {submitStatus === 'error' && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-3">
-                  <AlertCircle className="h-5 w-5 text-red-600" />
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
                   <p className="text-red-800 font-medium">Failed to send message. Please try again.</p>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+                {/* Nome + Email */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div>
                     <label htmlFor="fullName" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                       Full Name *
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         type="text"
                         id="fullName"
@@ -137,7 +180,7 @@ const Contact = () => {
                       Email Address *
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         type="email"
                         id="email"
@@ -152,13 +195,14 @@ const Contact = () => {
                   </div>
                 </div>
 
+                {/* Telefone + Empresa */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div>
                     <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                       Phone Number
                     </label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         type="tel"
                         id="phone"
@@ -176,7 +220,7 @@ const Contact = () => {
                       Company
                     </label>
                     <div className="relative">
-                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <input
                         type="text"
                         id="company"
@@ -190,21 +234,32 @@ const Contact = () => {
                   </div>
                 </div>
 
+                {/* Subject — select */}
                 <div>
                   <label htmlFor="subject" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Subject
+                    Subject *
                   </label>
-                  <input
-                    type="text"
-                    id="subject"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 md:py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="What's this about?"
-                  />
+                  <div className="relative">
+                    <select
+                      id="subject"
+                      name="subject"
+                      required
+                      value={formData.subject}
+                      onChange={handleInputChange}
+                      className="w-full appearance-none px-4 py-2.5 md:py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white pr-10"
+                    >
+                      {subjectOptions.map(opt => (
+                        <option key={opt.value} value={opt.value} disabled={opt.value === ''}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    {/* Seta custom (o select nativo esconde a default com appearance-none) */}
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  </div>
                 </div>
 
+                {/* Mensagem */}
                 <div>
                   <label htmlFor="message" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Message *
@@ -228,7 +283,7 @@ const Contact = () => {
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
                       <span>Sending...</span>
                     </>
                   ) : (
@@ -252,7 +307,7 @@ const Contact = () => {
 
               <div className="space-y-4 md:space-y-6">
                 {contactInfo.map((info) => (
-                  <div 
+                  <div
                     key={info.title}
                     className="bg-white dark:bg-gray-800 rounded-xl p-4 md:p-6 shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
                   >
@@ -280,10 +335,10 @@ const Contact = () => {
             </div>
           </div>
 
-          {/* Mapa Interativo - Agora abaixo dos dois cards */}
+          {/* Mapa */}
           <div className="mt-12 md:mt-16">
             <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-2xl h-64 md:h-80 flex items-center justify-center relative overflow-hidden shadow-lg">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
               <div className="relative text-center text-gray-600 dark:text-gray-300 z-10 px-4">
                 <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full p-4 md:p-6 inline-block mb-3 md:mb-4">
                   <MapPin className="h-8 w-8 md:h-12 md:w-12 text-blue-600 mx-auto" />
@@ -300,7 +355,7 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* ===== SEÇÃO PERGUNTAS FREQUENTES ===== */}
+      {/* FAQ */}
       <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">

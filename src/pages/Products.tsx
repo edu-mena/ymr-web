@@ -1,30 +1,38 @@
-import { useEffect, useState } from 'react';
-import { Search, Filter, Package, Grid3X3, Award, ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import {
+  Search,
+  Filter,
+  Package,
+  Grid3X3,
+  Award,
+  ChevronDown,
+  ChevronUp,
+  X
+} from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { Product } from '../types';
 import { apiFetch } from '../services/api';
 import { useLocation } from 'react-router-dom';
-
 
 import { productSlides } from "../data/productSlides";
 import { gif } from "../data/gif";
 import AsideGif from "../components/AsideGif";
 import ProductMiniSlider from '../components/ProductMiniSlider';
 import AsideVerticalSlider from '../components/AsideVerticalSlider';
- 
+
 const Products = () => {
-  // ===== ESTADOS PARA FILTROS =====
-  // Estados para controlar a busca e filtro por categoria
+  // ===== ESTADOS PRINCIPAIS =====
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-  const [subcats, setSubcats] = useState<any[]>([]);
-  const [isLoadingMeta, setIsLoadingMeta] = useState(false);
-  const [errorMeta, setErrorMeta] = useState<string | null>(null);
+  const [items, setItems] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isSubcategoriesExpanded, setIsSubcategoriesExpanded] = useState(true);
+  const [isDataReady, setIsDataReady] = useState(false);
   const location = useLocation();
 
+  // Atualiza estado com base na URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const cat = params.get('category');
@@ -40,230 +48,117 @@ const Products = () => {
     }
   }, [location.search]);
 
-  // ===== BUSCAR CATEGORIAS E SUBCATEGORIAS (API) =====
+  // ===== CARREGAR PRODUTOS (ÚNICA REQUISIÇÃO) =====
   useEffect(() => {
-    async function loadMeta() {
-      setIsLoadingMeta(true);
-      setErrorMeta(null);
-      try {
-        // Subcategorias (endpoint público com paginação) — sem Authorization
-        const subRes = await apiFetch('/subcategories?isActive=true&limit=100', { noAuth: true });
-        const subPayload = subRes?.data || subRes; // SuccessResponseDto -> { data, pagination }
-        const subArray = subPayload?.data || [];
-        setSubcats(subArray);
-
-        // Derivar categorias a partir das subcategorias (sem 401)
-        const uniqueCats = new Map<string, string>();
-        subArray.forEach((s: any) => {
-          const catId = s.category?.id || s.categoryId;
-          const catName = s.category?.name;
-          if (catId && catName && !uniqueCats.has(catName)) {
-            uniqueCats.set(catName, catId);
-          }
-        });
-        setCategories(Array.from(uniqueCats.keys()).map((name) => ({ id: uniqueCats.get(name) as string, name })));
-      } catch (e: any) {
-        setErrorMeta(e.message || 'Falha ao carregar categorias');
-      } finally {
-        setIsLoadingMeta(false);
-      }
-    }
-    loadMeta();
-  }, []);
-
-  // ===== BUSCA DE PRODUTOS VIA API =====
-  const [items, setItems] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function load() {
+    async function loadProducts() {
       setIsLoading(true);
       setError(null);
       try {
-        const url = new URL('/products', 'http://local'); // base dummy para URL API
-        // filtros
-        if (searchTerm) url.searchParams.set('search', searchTerm);
-        // mapear nomes para IDs para filtrar no servidor
-        const selectedCatObj = categories.find((c) => c.name === selectedCategory);
-        if (selectedCatObj && selectedCategory !== 'All') {
-          url.searchParams.set('categoryId', selectedCatObj.id);
-        }
-        const selectedSubObj = subcats.find((s: any) => s.name === selectedSubcategory);
-        if (selectedSubObj) {
-          url.searchParams.set('subcategoryId', selectedSubObj.id);
-        }
-        // Deixe a API aplicar paginação padrão; não enviar page/limit
-
-        const data = await apiFetch(url.pathname + '?' + url.searchParams.toString());
-        const list: any[] = data?.data || [];
-        // Mapear do formato da API para o tipo Product usado pelo UI
-        const mapped: Product[] = list.map((p: any) => ({
-          id: p.id || p._id || String(p.code || p.name),
+        // ÚNICA REQUISIÇÃO À API
+        const res = await apiFetch('/products?limit=100', { noAuth: true });
+        const list: any[] = res?.data || [];
+        
+        // Mapeia diretamente os dados da API
+        const mapped: Product[] = list.map(p => ({
+          id: p.id,
           name: p.name,
           description: p.description || '',
-          category: p.subcategory?.category?.name || p.category?.name || 'Categoria',
-          subcategory_name: p.subcategory?.name,
+          category: p.category_name || 'Categoria',
+          subcategory_name: p.subcategory_name || 'Subcategoria',
           brand: p.brand?.name,
           model: p.model,
           cod: p.code,
-          availability: p.isActive ? 'Em Estoque' : 'Indisponível',
-          image: p.images?.[0] || p.thumbnail || 'https://via.placeholder.com/300x300?text=Produto',
-          images: p.images || (p.thumbnail ? [p.thumbnail] : undefined),
+          availability: p.is_active ? 'Em Estoque' : 'Indisponível',
+          image: p.images?.[0] || 'https://via.placeholder.com/300x300?text=Produto',
+          images: p.images || [],
           features: p.features,
           price: p.price,
         }));
+        
         setItems(mapped);
+        setIsDataReady(true);
       } catch (e: any) {
         setError(e.message || 'Falha ao carregar produtos');
       } finally {
         setIsLoading(false);
       }
     }
-    load();
-  }, [searchTerm, selectedCategory, selectedSubcategory]);
+    loadProducts();
+  }, []);
 
-  // ===== LÓGICA DE FILTRAGEM (client-side) =====
-  const filteredProducts: Product[] = items.filter(product => {
-    const matchesSearch = !searchTerm || product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (product.description || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    const matchesSubcategory = !selectedSubcategory || product.subcategory_name === selectedSubcategory || product.subcategory_name === (selectedSubcategory as any);
-    return matchesSearch && matchesCategory && matchesSubcategory;
-  });
+  // ===== CÁLCULO DE CATEGORIAS ÚNICAS =====
+  const uniqueCategories = useMemo(() => {
+    const cats = new Set(items.map(p => p.category));
+    cats.delete('Categoria');
+    return ['All', ...Array.from(cats).sort()];
+  }, [items]);
 
-  const filteredSubcategories = subcats.filter((subcategory: any) => {
-    const matchesCategory = selectedCategory !== 'All' && (subcategory.category?.name === selectedCategory);
-    return matchesCategory;
-  });
+  // ===== SUBCATEGORIAS DA CATEGORIA SELECIONADA =====
+  const filteredSubcategories = useMemo(() => {
+    if (selectedCategory === 'All') return [];
+    const subs = new Set(
+      items
+        .filter(p => p.category === selectedCategory && p.subcategory_name !== 'Subcategoria')
+        .map(p => p.subcategory_name)
+    );
+    return Array.from(subs).sort();
+  }, [items, selectedCategory]);
+
+  // ===== FILTRAGEM FINAL =====
+  const filteredProducts = useMemo(() => {
+    if (!isDataReady) return [];
+    
+    return items.filter(product => {
+      // Busca
+      const matchesSearch = !searchTerm || 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (product.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Categoria
+      const matchesCategory = selectedCategory === 'All' || 
+        product.category === selectedCategory;
+
+      // Subcategoria
+      const matchesSubcategory = !selectedSubcategory || 
+        product.subcategory_name === selectedSubcategory;
+
+      return matchesSearch && matchesCategory && matchesSubcategory;
+    });
+  }, [items, searchTerm, selectedCategory, selectedSubcategory, isDataReady]);
 
   return (
     <div className="min-h-screen page-content bg-white dark:bg-gray-900">
-
-      {/* ===== SEÇÃO FILTROS ===== */}
-      {/* Seção que contém os controles de busca e filtro por categoria */}
-      <section className="py-6 md:py-8 bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="flex flex-col lg:flex-row gap-4 md:gap-6 items-center justify-center">
-            {/* Campo de Busca */}
-            <div className="relative flex-1 max-w-md w-full">
-              <Search className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <input
-                type="text"
-                placeholder="Buscar produtos..."
-                className="w-full pl-10 md:pl-12 pr-3 md:pr-4 py-3 md:py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            {/* Filtro por Categoria */}
-            <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto">
-              <div className="bg-blue-50 p-2.5 md:p-3 rounded-xl">
-                <Filter className="h-5 w-5 text-blue-600" />
-              </div>
-              <select
-                className="border border-gray-300 rounded-xl px-3 md:px-6 py-2.5 md:py-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm text-sm md:text-base w-full md:w-auto min-w-0 md:min-w-[200px]"
-                value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
-                  setSelectedSubcategory(''); // Reseta subcategoria ao mudar categoria
-                }}
-              >
-                <option key="0" value="All">Todas as categorias</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.name}>{category.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          {/* Lista de Subcategorias */}
-          {isLoadingMeta ? (
-            <div className="mt-8 text-center">
-              <div className="inline-flex items-center px-4 py-2 bg-blue-50 rounded-full">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                <span className="text-sm text-blue-600">Carregando categorias...</span>
-              </div>
-            </div>
-          ) : errorMeta ? (
-            <div className="mt-8 text-center">
-              <div className="inline-flex items-center px-4 py-2 bg-red-50 rounded-full">
-                <span className="text-sm text-red-600">{errorMeta}</span>
-              </div>
-            </div>
-          ) : filteredSubcategories.length === 0 ? (<></>) : (
-              <>
-                {/* ==== CARD DE SUBCATEGORIAS ==== */}
-                <div className="mt-6 md:mt-8">
-                  <div className="flex items-center justify-between mb-3 md:mb-4">
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Subcategorias</h3>
-                    <button
-                      onClick={() => setIsSubcategoriesExpanded(!isSubcategoriesExpanded)}
-                      className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                    >
-                      <span>{isSubcategoriesExpanded ? 'Minimizar' : 'Expandir'}</span>
-                      {isSubcategoriesExpanded ? (
-                        <ChevronUp className="h-4 w-4 transition-transform duration-200" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 transition-transform duration-200" />
-                      )}
-                    </button>
-                  </div>
-                  
-                  <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                    isSubcategoriesExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                  }`}>
-                    <div className="flex flex-wrap gap-1.5 md:gap-2">
-                      {filteredSubcategories.map((subcategory, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setSelectedSubcategory(selectedSubcategory === subcategory.name ? '' : subcategory.name)}
-                          className={`px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 hover:scale-105 ${
-                            selectedSubcategory === subcategory.name 
-                              ? 'bg-blue-600 text-white shadow-md dark:bg-blue-700' 
-                              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'
-                          }`}
-                        >
-                          {subcategory.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-        </div>
-      </section>
       
-      {/* ===== SEÇÃO GRADE DE PRODUTOS ===== */}
-      {/* Seção que exibe os produtos filtrados em formato de grid responsivo */}
+      {/* ===== SECÇÃO GRADE DE PRODUTOS ===== */}
       <section className="py-8 md:py-12 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center space-x-2 bg-green-100 rounded-full px-4 py-2 mb-4">
-              <Package className="h-5 w-5 text-green-600" />
-              <span className="text-sm font-medium text-green-800">Resultados da Busca</span>
-            </div>
-            <div className="bg-gray-50 rounded-2xl p-5 md:p-6 max-w-2xl mx-auto">
-              <p className="text-base md:text-lg font-semibold text-gray-900">
-                {filteredProducts.length} {filteredProducts.length === 1 ? 'produto encontrado' : 'produtos encontrados'}
-              </p>
-              {selectedCategory !== 'All' && (
-                <p className="text-gray-600 mt-1 text-sm md:text-base">na categoria <span className="font-medium text-blue-600">{selectedCategory}</span></p>
-              )}
-              {searchTerm && (
-                <p className="text-gray-600 mt-1 text-sm md:text-base">correspondendo a <span className="font-medium text-blue-600">"{searchTerm}"</span></p>
-              )}
-            </div>
-          </div>
+
           <div className="w-full px-2 md:px-4 flex flex-col lg:flex-row gap-6 md:gap-8">
-            {/* Conteúdo Principal */}
             <div className="flex-1 min-w-0 lg:max-w-[1000px]">
-              {isLoading ? (
+
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2 mb-4">
+                  <Package className="h-5 w-5 text-blue-900" />
+                  <span className="text-sm font-medium text-blue-900">Resultados da Busca</span>
+                </div>
+                <div className="bg-gray-50 rounded-2xl p-5 md:p-6 max-w-2xl mx-auto">
+                  <p className="text-base md:text-lg font-semibold text-gray-900">
+                    {filteredProducts.length} {filteredProducts.length === 1 ? 'produto encontrado' : 'produtos encontrados'}
+                  </p>
+                  {selectedCategory !== 'All' && (
+                    <p className="text-gray-600 mt-1 text-sm md:text-base">na categoria <span className="font-medium text-blue-600">{selectedCategory}</span></p>
+                  )}
+                  {searchTerm && (
+                    <p className="text-gray-600 mt-1 text-sm md:text-base">correspondendo a <span className="font-medium text-blue-600">"{searchTerm}"</span></p>
+                  )}
+                </div>
+              </div>
+
+              {!isDataReady ? (
                 <div className="text-center py-20">
                   <div className="inline-flex items-center space-x-3 bg-blue-50 rounded-2xl px-8 py-6">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <p className="text-xl text-blue-600 font-medium">Carregando produtos...</p>
+                    <p className="text-xl text-blue-600 font-medium">Carregando catálogo...</p>
                   </div>
                 </div>
               ) : error ? (
@@ -303,77 +198,164 @@ const Products = () => {
                       className="animate-fade-in-up"
                       style={{ animationDelay: `${index * 0.05}s` }}
                     >
-                      <ProductCard id={product.id} name={product.name} image={product.image} category={product.category} />
+                      <ProductCard 
+                        id={product.id} 
+                        name={product.name} 
+                        image={product.image} 
+                        category={product.category} 
+                        to={`/product/${product.id}`} 
+                      />
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Aside Publicitário */}
-            <aside className="hidden lg:block min-w-[320px] max-w-xs lg:flex-shrink-0 space-y-8">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
-                <h3 className="text-lg font-semibold text-blue-900 mb-4">Produtos em Destaque</h3>
-                <ProductMiniSlider slides={productSlides} />
-              </div>
+            {/* Aside Publicitário - Desktop */}
+            <aside className="hidden lg:block min-w-[320px] max-w-xs lg:flex-shrink-0 space-y-6">
               
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
-                <h3 className="text-lg font-semibold text-green-900 mb-4">Ofertas Especiais</h3>
-                <AsideGif img={gif.img} title={gif.title} />
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                {/* ===== HEADER ===== */}
+                <div className="bg-[#e6e6e6] dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-900 p-4 border-b dark:border-gray-700">
+                  <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    Filtros
+                  </h3>
+                  {/* ===== CONTEÚDO DOS FILTROS ===== */}
+                  <div className="pt-5 space-y-4">
+                    
+                    {/* Campo de Busca */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <input
+                        type="text"
+                        placeholder="Buscar produtos..."
+                        className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg 
+                                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                                  placeholder-gray-400 dark:placeholder-gray-500
+                                  focus:ring-2 focus:ring-blue-500 focus:border-transparent 
+                                  transition-all duration-200"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Filtro por Categoria */}
+                    <div className="space-y-2">
+                      <select
+                        className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
+                                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                                  focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                  transition-all duration-200 cursor-pointer"
+                        value={selectedCategory}
+                        onChange={(e) => {
+                          setSelectedCategory(e.target.value);
+                          setSelectedSubcategory('');
+                        }}
+                      >
+                        <option value="">Todas as categorias</option>
+                        {uniqueCategories.map(category => (
+                          <option key={category} value={category}>{category}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Lista de Subcategorias */}
+                    {filteredSubcategories.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                            Subcategorias
+                          </label>
+                          <button
+                            onClick={() => setIsSubcategoriesExpanded(!isSubcategoriesExpanded)}
+                            className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                          >
+                            {isSubcategoriesExpanded ? 'Recolher' : 'Expandir'}
+                            {isSubcategoriesExpanded ? (
+                              <ChevronUp className="h-3 w-3" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3" />
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Pills de Subcategorias com animação */}
+                        <div 
+                          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                            isSubcategoriesExpanded ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+                          }`}
+                        >
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {filteredSubcategories.map((subcategory, index) => (
+                              <button
+                                key={index}
+                                onClick={() =>
+                                  setSelectedSubcategory(
+                                    selectedSubcategory === subcategory ? '' : (subcategory ?? '')
+                                  )
+                                }
+                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 
+                                          hover:scale-[1.02] active:scale-[0.98]
+                                          ${
+                                            selectedSubcategory === subcategory
+                                              ? 'bg-blue-600 text-white shadow-sm dark:bg-blue-700'
+                                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                          }`}
+                              >
+                                {subcategory}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Botão Limpar Filtros (aparece quando há filtros ativos) */}
+                    {(searchTerm || selectedCategory || selectedSubcategory) && (
+                      <button
+                        onClick={() => {
+                          setSearchTerm('');
+                          setSelectedCategory('');
+                          setSelectedSubcategory('');
+                        }}
+                        className="bg-blue-900 w-full py-2 text-sm text-white flex items-center justify-center gap-2 duration-200 rounded-lg hover:bg-red-600"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Limpar filtros
+                      </button>
+                    )}
+                  </div>
+                </div>
+
               </div>
+
+              {/* 1. PRODUTOS EM SLIDE */}
+              <ProductMiniSlider useApi={true} limit={3} />
+
+              {/* 1.2. BANNER ANIMADO COM GIF */}
+              <AsideGif img={gif.img} title={gif.title}/>
               
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
-                <h3 className="text-lg font-semibold text-purple-900 mb-4">Marcas Parceiras</h3>
-                <AsideVerticalSlider
-                  images={[
-                    "https://ymrindustrial.com/assets/aside/wtl.png",
-                    "https://ymrindustrial.com/assets/aside/04.png",
-                    "https://ymrindustrial.com/assets/aside/jetlubes.png",
-                  ]}
-                />
-              </div>
+              {/* 6 SLIDER VERTICAL DE IMAGENS */}
+              <AsideVerticalSlider images={[
+                'https://ymrindustrial.com/assets/aside/wtl.png',
+                'https://ymrindustrial.com/assets/aside/04.png',
+                'https://ymrindustrial.com/assets/aside/jetlubes.png'
+                ]} 
+              />
+              
+              {/*<AdSlider slides={adSlides} />*/}
             </aside>
           </div>
-
         </div>
       </section>
+
       {/* Produtos em Destaque abaixo (mobile/tablet) */}
       <section className="lg:hidden py-6 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
             <h3 className="text-lg font-semibold text-blue-900 mb-4">Produtos em Destaque</h3>
             <ProductMiniSlider slides={productSlides} />
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Stats no rodapé */}
-      <section className="py-8 bg-gray-50 dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8 border border-gray-100 dark:border-gray-700">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:shadow-lg transition-all duration-300">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Package className="h-6 w-6 text-blue-600" />
-                  <span className="text-2xl font-bold text-blue-700">{filteredProducts.length}</span>
-                </div>
-                <p className="text-sm text-blue-800 font-medium">Produtos Disponíveis</p>
-              </div>
-              <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200 hover:shadow-lg transition-all duration-300">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Grid3X3 className="h-6 w-6 text-yellow-600" />
-                  <span className="text-2xl font-bold text-yellow-700">{categories.length}</span>
-                </div>
-                <p className="text-sm text-yellow-800 font-medium">Categorias</p>
-              </div>
-              <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 hover:shadow-lg transition-all duration-300">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Award className="h-6 w-6 text-green-600" />
-                  <span className="text-2xl font-bold text-green-700">98%</span>
-                </div>
-                <p className="text-sm text-green-800 font-medium">Disponibilidade</p>
-              </div>
-            </div>
           </div>
         </div>
       </section>

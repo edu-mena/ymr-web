@@ -103,25 +103,15 @@ export default function UserHeader({ userData, activeTab, setActiveTab, onAvatar
     <>
       {/* ===== HEADER DO PERFIL ===== */}
       <div
-        className={`bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-white 
-  sticky z-10 relative overflow-hidden transform-gpu transition-all duration-500 ease-in-out ${isHidden ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}
+        className={`bg-gray-900 text-white sticky z-10 relative overflow-hidden transform-gpu transition-all duration-500 ease-in-out ${isHidden ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}
         style={{ top: headerOffsetPx }}
       >
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }} />
+          <div className="absolute inset-0 bg-blue-900" />
         </div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
-          {/* Badge Verificado no canto (mobile) */}
-          <div className="md:hidden absolute top-2 right-4">
-            <div className="flex items-center gap-1 bg-green-500/20 px-3 py-1.5 rounded-full border border-green-400/30">
-              <Shield className="h-3 w-3 text-green-400" />
-              <span className="text-xs font-medium text-green-300">Verificado</span>
-            </div>
-          </div>
           {/* Seção Principal */}
           <div className="flex flex-col xl:flex-row items-center xl:items-center gap-6 md:gap-8 text-center md:text-left">
             
@@ -154,25 +144,20 @@ export default function UserHeader({ userData, activeTab, setActiveTab, onAvatar
                 <div className="flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-2 sm:gap-3 mb-1">
                   <h1 className="text-lg font-bold text-white truncate">{userData.name}</h1>
                   <div className="hidden md:flex items-center gap-2">
-                    <div className="flex items-center gap-1 bg-green-500/20 px-3 py-1.5 rounded-full border border-green-400/30">
-                      <Shield className="h-3 w-3 text-green-400" />
-                      <span className="text-xs font-medium text-green-300">Verificado</span>
-                    </div>
                   </div>
                 </div>
                 
-                <p className="text-gray-300 text-sm font-medium mb-2">{userData.position}</p>
+                <p className="text-gray-300 text-xs font-medium mb-2">{userData.position}</p>
                 
                 {!isScrolled && (
                   <div className={`transition-opacity duration-500 ease-in-out ${isScrolled ? "opacity-0" : "opacity-100"}`}>
                     <div className="hidden md:flex items-center gap-4 text-sm text-gray-300 w-full">
-                      <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
-                        <Mail className="h-4 w-4 text-blue-400" />
+                      <div className="flex items-center gap-2 rounded-lg">
                         <span className="truncate">{userData.email}</span>
                       </div>
-                      <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
+                      <div className="flex items-center gap-2 rounded-lg">
                         <MapPin className="h-4 w-4 text-green-400" />
-                        <span>{userData.city}, {userData.country}</span>
+                        <span>{userData.city} {userData.country}</span>
                       </div>
                     </div>
                   </div>
@@ -208,25 +193,23 @@ export default function UserHeader({ userData, activeTab, setActiveTab, onAvatar
         <div className="bg-white shadow-xl border-t border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
             {/* Fades nas bordas para indicar scroll */}
-            <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-white to-transparent" aria-hidden="true" />
-            <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-white to-transparent" aria-hidden="true" />
             <nav className="flex space-x-1 overflow-x-auto scrollbar-thin">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 py-3 md:py-4 px-4 md:px-6 border-b-3 font-semibold text-sm whitespace-nowrap transition-all duration-300 rounded-t-xl relative group ${
+                  className={`flex items-center gap-2 py-3 md:py-4 px-4 md:px-6 border-b-3 font-semibold text-sm whitespace-nowrap transition-all duration-300 relative group ${
                     activeTab === tab.id
-                      ? 'border-blue-600 text-blue-600 bg-gradient-to-b from-blue-50 to-white'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      ? 'border-blue-600 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
                   <tab.icon className={`h-4 w-4 transition-colors duration-300 ${
-                    activeTab === tab.id ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'
+                    activeTab === tab.id ? 'text-gray-900' : 'text-gray-400 group-hover:text-gray-600'
                   }`} />
                   {tab.label}
                   {activeTab === tab.id && (
-                    <div className="absolute bottom-0 left-0 right-0 mx-auto w-8 h-1 bg-blue-600 rounded-full"></div>
+                    <div className="absolute bottom-0 left-0 right-0 mx-auto w-8 h-1 bg-blue-900 rounded-full"></div>
                   )}
                 </button>
               ))}

@@ -12,7 +12,7 @@ export default function AsideNewsletter() {
             placeholder="Seu e-mail"
             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg text-black dark:text-gray-100 placeholder-gray-900 dark:placeholder-gray-300 text-sm focus:outline-none focus:border-red-500"
           />
-          <button className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium text-sm transition-colors">
+          <button className="w-full bg-blue-900 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium text-sm transition-colors">
             Subscrever
           </button>
         </div>

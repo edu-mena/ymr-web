@@ -38,30 +38,25 @@ const Home = () => {
     return () => clearInterval(interval);
   }, [currentSlide]);
 
-  // Carregar subcategorias públicas e derivar categorias (evita 401)
   useEffect(() => {
     async function loadCategories() {
       setIsLoadingCats(true);
       setCatsError(null);
       try {
-        const subRes = await apiFetch('/subcategories?isActive=true&limit=100', { noAuth: true });
-        const payload = subRes?.data || subRes;
-        const subArray = payload?.data || [];
-        const unique = new Map<string, { id: string; name: string; image?: string }>();
-        subArray.forEach((s: any) => {
-          const catId = s.category?.id || s.categoryId;
-          const catName = s.category?.name;
-          if (catId && catName && !unique.has(catName)) {
-            unique.set(catName, {
-              id: catId,
-              name: catName,
-              image: s.category?.imageUrl || undefined,
-            });
-          }
-        });
-        const list = Array.from(unique.values());
-        setCategories(list);
+        // Chama a nova rota /categories da API PHP
+        const res = await apiFetch('/categories', { noAuth: true });
+        const categoriesData = res?.data || [];
+        
+        // Mapeia para o formato esperado pelo componente
+        const formattedCategories = categoriesData.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          image: cat.image_url || undefined,
+        }));
+        
+        setCategories(formattedCategories);
       } catch (e: any) {
+        console.error('Erro ao carregar categorias:', e);
         setCatsError(e.message || 'Falha ao carregar categorias');
       } finally {
         setIsLoadingCats(false);
@@ -105,8 +100,8 @@ const Home = () => {
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <div className="bg-white rounded-xl p-5 md:p-6 shadow-md card-hover h-full flex flex-col">
-                          <div className="bg-red-50 p-4 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center flex-shrink-0">
-                            <feature.icon className="h-8 w-8 text-red-600" />
+                          <div className="bg-gray-100 p-4 rounded-lg w-16 h-16 mx-auto mb-4 flex items-center justify-center flex-shrink-0">
+                            <feature.icon className="h-8 w-8 text-blue-900" />
                           </div>
                           <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
                           <p className="text-gray-600 flex-grow">{feature.description}</p>

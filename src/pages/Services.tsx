@@ -39,29 +39,6 @@ const Services = () => {
 
   return (
     <div className="min-h-screen page-content bg-white dark:bg-gray-900">
-      {/* ===== SEÇÃO HERO ===== */}
-      <section className="relative bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white py-24 overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }} />
-        </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-              <Wrench className="h-5 w-5" />
-              <span className="text-sm font-medium">Our Services</span>
-            </div>
-            <p className="text-lg text-gray-300 max-w-4xl mx-auto mb-8">
-              Soluções industriais completas para o mercado angolano, desde aluguer de equipamentos pesados 
-              até consultoria especializada em hidrocarbonetos e geotérmica.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* ===== SEÇÃO SLIDER DE SERVIÇOS LOCAIS ===== */}
       <section className="py-20 bg-gray-50 dark:bg-gray-800 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -272,15 +249,15 @@ const Services = () => {
       <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center space-x-2 bg-red-100 rounded-full px-4 py-2 mb-6">
-              <Eye className="h-5 w-5 text-red-600" />
-              <span className="text-sm font-medium text-red-800">Strategic Partnership</span>
+            <div className="inline-flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2 mb-6">
+              <Eye className="h-5 w-5 text-blue-900" />
+              <span className="text-sm font-medium text-blue-900">Strategic Partnership</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Parceria Estratégica de Excelência</h2>
             <div className="max-w-4xl mx-auto">
               <p className="text-xl text-gray-700 mb-8 leading-relaxed">
                 Temos o <strong>imenso prazer e orgulho</strong> de anunciar nossa <strong>parceria estratégica bem consolidada</strong> 
-                com a renomada <strong className="text-red-600">Aboud Consultoria</strong>, uma empresa líder especializada em diferentes 
+                com a renomada <strong className="text-blue-900">Aboud Consultoria</strong>, uma empresa líder especializada em diferentes 
                 áreas da indústria de hidrocarbonetos e geotérmica.
               </p>
               <p className="text-lg text-gray-600 mb-8">
@@ -320,9 +297,9 @@ const Services = () => {
                   <div className="flex items-center justify-center">
                     <div className="relative">
                       <div className="absolute inset-0 rounded-full bg-red-500/20 blur-md animate-pulse" aria-hidden="true"></div>
-                      <div className="relative bg-red-600 text-white px-4 py-2 rounded-full font-semibold shadow-lg select-none">
-                  PARCERIA
-                </div>
+                        <div className="relative bg-gray-200 text-gray-500 text-xs font-semibold px-4 py-2 rounded-full font-semibold shadow-lg select-none transform bottom-5">
+                          PARCEIRO
+                        </div>
                     </div>
               </div>
               
@@ -354,7 +331,7 @@ const Services = () => {
                 <h3 className="text-3xl font-bold text-gray-900 mb-6">Sobre a Aboud Consultoria</h3>
                 <p className="text-lg text-gray-700 mb-6 leading-relaxed">
                   A Aboud Consultoria é formada por <strong>profissionais altamente especializados</strong> com 
-                  <strong className="text-red-600"> muitos anos de experiência internacional</strong> em diferentes 
+                  <strong className="text-blue-900"> muitos anos de experiência internacional</strong> em diferentes 
                   áreas da indústria de hidrocarbonetos e geotérmica.
                 </p>
                 <div className="space-y-4 mb-6">
@@ -392,7 +369,7 @@ const Services = () => {
                 key={stat.label}
                 className="text-center bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group"
               >
-                <div className="text-3xl md:text-4xl font-bold text-red-600 mb-2 group-hover:scale-110 transition-transform duration-300">{stat.number}</div>
+                <div className="text-3xl md:text-4xl font-bold text-green-500 mb-2 group-hover:scale-110 transition-transform duration-300">{stat.number}</div>
                 <div className="text-gray-600 font-medium">{stat.label}</div>
               </div>
             ))}
@@ -425,8 +402,8 @@ const Services = () => {
               >
                 <div className={index % 2 === 1 ? 'lg:col-start-2' : ''}>
                   <div className="flex items-center mb-6">
-                    <div className="bg-red-50 p-3 rounded-full mr-4">
-                      <service.icon className="h-8 w-8 text-red-600" />
+                    <div className="bg-gray-100 p-3 rounded-full mr-4">
+                      <service.icon className="h-8 w-8 text-blue-900" />
                     </div>
                     <h3 className="text-2xl md:text-3xl font-bold text-gray-900">{service.title}</h3>
                   </div>
@@ -447,7 +424,7 @@ const Services = () => {
                       <p className="font-semibold text-gray-900 mb-3">Marcas Representadas:</p>
                       <div className="flex flex-wrap gap-2">
                         {service.brands.map((brand, idx) => (
-                          <span key={idx} className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
+                          <span key={idx} className="bg-gray-100 text-blue-900 px-3 py-1 rounded-full text-sm font-medium">
                             {brand}
                           </span>
                         ))}
@@ -460,7 +437,7 @@ const Services = () => {
                       <p className="font-semibold text-gray-900 mb-3">Especialidades:</p>
                       <div className="flex flex-wrap gap-2">
                         {service.specialties.map((specialty, idx) => (
-                          <span key={idx} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
+                          <span key={idx} className="bg-gray-100 text-blue-900 px-3 py-1 rounded-full text-sm font-medium">
                             {specialty}
                           </span>
                         ))}
@@ -473,7 +450,7 @@ const Services = () => {
                       <p className="font-semibold text-gray-900 mb-3">Certificações:</p>
                       <div className="flex flex-wrap gap-2">
                         {service.certifications.map((cert, idx) => (
-                          <span key={idx} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                          <span key={idx} className="bg-gray-100 text-blue-900 px-3 py-1 rounded-full text-sm font-medium">
                             {cert}
                           </span>
                         ))}
@@ -492,37 +469,6 @@ const Services = () => {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== CALL TO ACTION FINAL ===== */}
-      <section className="py-20 bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }} />
-        </div>
-        
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-12 border border-white/20">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Transforme Seus Projetos com Nossas Soluções
-            </h2>
-            <p className="text-xl text-gray-200 mb-10 max-w-3xl mx-auto leading-relaxed">
-              Seja para aluguer de equipamentos industriais pesados ou consultoria especializada em hidrocarbonetos, 
-              nossa equipe de especialistas está pronta para entregar resultados excepcionais.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-10 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2">
-                <CheckCircle className="h-5 w-5" />
-                <span>Solicitar Consultoria</span>
-              </button>
-              <button className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-10 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2">
-                <ArrowRight className="h-5 w-5" />
-                <span>Falar com Especialista</span>
-              </button>
-            </div>
           </div>
         </div>
       </section>

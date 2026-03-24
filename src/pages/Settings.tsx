@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Settings as SettingsIcon, 
   Bell, 
@@ -10,11 +10,14 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../services/api';
 
 const Settings = () => {
   const { theme, setTheme } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const isRestricted = !isAuthenticated;
+
+  // Estados para configurações
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
@@ -44,6 +47,53 @@ const Settings = () => {
   const [currency, setCurrency] = useState('AOA');
   const [timezone, setTimezone] = useState('Africa/Luanda');
 
+  // Estados para upload de avatar
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Estado para dados do usuário
+  const [userData, setUserData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    birthDate: '',
+    address: '',
+    city: '',
+    country: 'Angola',
+    company: '',
+    position: '',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+  });
+
+  // Carregar perfil ao montar
+  useEffect(() => {
+    if (isAuthenticated) {
+      const loadProfile = async () => {
+        try {
+          const response = await apiFetch('/auth/profile');
+          const user = response.user;
+          setUserData({
+            id: user.id,
+            name: user.name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            birthDate: user.birth_date ? user.birth_date.split('T')[0] : '',
+            address: user.address || '',
+            city: user.city || '',
+            country: user.country || 'Angola',
+            company: user.company || '',
+            position: user.position || '',
+            avatar: user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+          });
+        } catch (err) {
+          console.error('Erro ao carregar perfil:', err);
+        }
+      };
+      loadProfile();
+    }
+  }, [isAuthenticated]);
+
+  // Funções de manipulação
   const handleNotificationChange = (key: string) => {
     setNotifications(prev => ({
       ...prev,
@@ -59,15 +109,37 @@ const Settings = () => {
   };
 
   const handleSecurityChange = (key: string) => {
-    setSecurity(prev => ({
-      ...prev,
-      [key]: !prev[key as keyof typeof prev]
-    }));
+    if (key === 'twoFactor' || key === 'loginAlerts') {
+      setSecurity(prev => ({
+        ...prev,
+        [key]: !prev[key as keyof typeof prev]
+      }));
+    }
   };
 
-  const handleSave = () => {
-    // Aqui você salvaria as configurações na API
-    console.log('Configurações salvas:', { notifications, privacy, security, theme, language, currency, timezone });
+  const handleSave = async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      await apiFetch('/auth/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: userData.name,
+          phone: userData.phone,
+          birth_date: userData.birthDate,
+          address: userData.address,
+          city: userData.city,
+          country: userData.country,
+          company: userData.company,
+          position: userData.position
+        })
+      });
+
+      alert('Configurações salvas com sucesso!');
+    } catch (err: any) {
+      alert('Erro ao salvar configurações: ' + (err.message || 'Tente novamente'));
+    }
   };
 
   const handleReset = () => {
@@ -97,6 +169,41 @@ const Settings = () => {
     setLanguage('pt');
     setCurrency('AOA');
     setTimezone('Africa/Luanda');
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione apenas arquivos de imagem.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('A imagem deve ter no máximo 5MB.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      setIsUploading(true);
+      const response = await apiFetch('/upload/avatar', {
+        method: 'POST',
+        body: formData,
+        noAuth: false
+      });
+
+      setUserData(prev => ({ ...prev, avatar: response.avatar_url }));
+      setShowAvatarModal(false);
+      alert('Foto de perfil atualizada com sucesso!');
+    } catch (err: any) {
+      alert('Erro ao enviar avatar: ' + (err.message || 'Tente novamente'));
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -378,7 +485,8 @@ const Settings = () => {
               </button>
               <button
                 onClick={handleSave}
-                className="flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200"
+                disabled={isRestricted}
+                className="flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="h-4 w-4 mr-2" />
                 Salvar Configurações
@@ -387,6 +495,79 @@ const Settings = () => {
           </div>
         </div>
       </section>
+
+      {/* ===== MODAL DE UPLOAD DE AVATAR ===== */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-800">Alterar Foto de Perfil</h2>
+                <button
+                  onClick={() => setShowAvatarModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+              <div className="text-center mb-6">
+                <div className="relative inline-block">
+                  <img
+                    src={userData.avatar}
+                    alt="Avatar atual"
+                    className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
+                  />
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 mt-2">Foto atual</p>
+              </div>
+              <div className="space-y-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="avatar-upload"
+                />
+                <button
+                  onClick={() => document.getElementById('avatar-upload')?.click()}
+                  disabled={isUploading || isRestricted}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
+                >
+                  <Camera className="h-5 w-5" />
+                  {isUploading ? 'Enviando...' : 'Escolher Nova Foto'}
+                </button>
+                <button
+                  onClick={() => {
+                    setUserData(prev => ({ 
+                      ...prev, 
+                      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face' 
+                    }));
+                    setShowAvatarModal(false);
+                  }}
+                  disabled={isUploading || isRestricted}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                  Usar Foto Padrão
+                </button>
+              </div>
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h3 className="text-sm font-medium text-blue-800 mb-2">Requisitos da foto:</h3>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• Formatos aceitos: JPG, PNG, GIF</li>
+                  <li>• Tamanho máximo: 5MB</li>
+                  <li>• Resolução recomendada: 400x400px ou superior</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

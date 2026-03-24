@@ -76,7 +76,7 @@ const HeroSlider: React.FC<Props> = ({ slides, delay = 5000, heightClass = "h-[7
                         to={b.link}
                         className={`inline-flex items-center gap-2 px-4 py-2.5 md:py-3 rounded-lg font-medium transition transform hover:scale-[1.03] md:hover:scale-105 ${
                           b.variant === "primary"
-                            ? "bg-red-600 hover:bg-red-700 text-white"
+                            ? "bg-blue-900 text-white"
                             : "bg-transparent border-2 border-white text-white hover:bg-white hover:text-gray-900"
                         }`}
                       >
@@ -130,7 +130,7 @@ const HeroSlider: React.FC<Props> = ({ slides, delay = 5000, heightClass = "h-[7
             aria-current={i === current ? "true" : undefined}
             onClick={() => goTo(i)}
             className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full transition-all duration-200 ${
-              i === current ? "bg-red-500 scale-110 md:scale-125" : "bg-white/60"
+              i === current ? "bg-blue-600 scale-110 md:scale-125" : "bg-white/60"
             }`}
           />
         ))}

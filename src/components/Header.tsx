@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, User, ShoppingCart, X, ArrowRight, Menu, Settings, Home, Mail, Info, Wrench } from 'lucide-react';
-import { useAuth } from '../../src/context/AuthContext';
-import { useCart } from '../../src/context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { apiFetch } from '../services/api';
 
 
@@ -30,7 +30,6 @@ const Header = () => {
   const dropdownListRef = useRef<HTMLDivElement>(null);
   const [cartBump, setCartBump] = useState(false);
   const [isDrawerReady, setIsDrawerReady] = useState(false);
-  
 
   useEffect(() => {
     const handleScroll = () => {
@@ -77,28 +76,23 @@ const Header = () => {
     async function loadCategories() {
       setIsLoadingCategories(true);
       try {
-        // Carregar subcategorias para derivar categorias
-        const subRes = await apiFetch('/subcategories?isActive=true&limit=100', { noAuth: true });
-        const subPayload = subRes?.data || subRes;
-        const subArray = subPayload?.data || [];
-        
-        // Derivar categorias únicas das subcategorias
-        const uniqueCats = new Map<string, string>();
-        subArray.forEach((s: any) => {
-          const catId = s.category?.id || s.categoryId;
-          const catName = s.category?.name;
-          if (catId && catName && !uniqueCats.has(catName)) {
-            uniqueCats.set(catName, catId);
-          }
-        });
-        
-        const categoriesList = Array.from(uniqueCats.keys()).map((name) => ({ 
-          id: uniqueCats.get(name) as string, 
-          name 
-        }));
-        setCategories(categoriesList);
-      } catch (e: any) {
-        console.error('Erro ao carregar categorias:', e.message);
+        // Chama rota /categories (mais genérica) para evitar 400 com category_id inválido
+        const res = await apiFetch('/categories?isActive=true&limit=100', { noAuth: true });
+        const categoriesData = res?.data || res || [];
+
+        const categoriesList = (categoriesData || []).map((cat: any) => ({
+          id: String(cat.id || cat.category_id || cat._id || cat.value || ''),
+          name: cat.name || cat.category_name || 'Categoria sem nome',
+        })).filter((cat: any) => cat.id && cat.name);
+
+        if (categoriesList.length > 0) {
+          setCategories(categoriesList);
+        } else {
+          throw new Error('Não foram encontradas categorias válidas');
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error('Erro ao carregar categorias:', message);
         // Fallback para categorias hardcoded em caso de erro
         setCategories([
           { id: '1', name: 'Adesivos, Selantes e Fitas' },
@@ -310,8 +304,6 @@ const Header = () => {
     setShowSearchDropdown(false);
   };
 
-  
-
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
       {/* ===== PRIMEIRA NAVBAR - NAVEGAÇÃO PRINCIPAL ===== */}
@@ -476,7 +468,7 @@ const Header = () => {
             {/* Segunda Div - Caixa de Busca Moderna com Dropdown */}
             <div className="hidden md:block flex-1 max-w-3xl mx-8">
               <div ref={searchRef} className="relative">
-                <form onSubmit={handleSearch} className="flex items-center h-12 bg-white dark:bg-gray-600 rounded-xl shadow-lg border border-gray-200 dark:border-gray-500 overflow-hidden">
+                <form onSubmit={handleSearch} className="flex items-center h-10 bg-white dark:bg-gray-600 rounded-xl shadow-lg border border-gray-200 dark:border-gray-500 overflow-hidden">
                   <div className="relative flex-1 h-full min-w-0">
                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
                       {isSearching ? (
@@ -503,6 +495,7 @@ const Header = () => {
                         <X className="h-5 w-5" />
                       </button>
                     )}
+                    
                   </div>
                   <div className="h-8 w-px bg-gray-300"></div>
                   <select
@@ -511,7 +504,7 @@ const Header = () => {
                     className="h-full px-3 bg-white text-gray-700 focus:outline-none focus:ring-0 border-0 min-w-[140px] max-w-[160px] text-sm"
                     disabled={isLoadingCategories}
                   >
-                    <option value="All">Todas</option>
+                    <option value="All">Categories</option>
                     {categories.map(category => (
                       <option key={category.id} value={category.name} title={category.name}>
                         {category.name.length > 15 ? category.name.substring(0, 15) + '...' : category.name}
@@ -521,10 +514,9 @@ const Header = () => {
                   <button
                     type="submit"
                     disabled={!searchTerm.trim() || searchResults.length === 0}
-                    className="h-full px-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="h-full px-3 bg-blue-900 text-white transition-all duration-200 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    <Search className="h-4 w-4" />
-                    <span className="hidden sm:inline">Buscar</span>
+                    <Search className="h-5 w-5" />
                   </button>
                 </form>
 
@@ -609,14 +601,14 @@ const Header = () => {
               </button>
               <Link
                 to="/products"
-                className="hidden md:inline text-lg font-regular text-gray-900 hover:text-red-600 transition-colors"
+                className="hidden md:inline-block relative text-sm p-1 font-medium hover:text-blue-900 after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-blue-900"
               >
                 Products
               </Link>
               {isAuthenticated ? (
                 <Link
                   to="/cart"
-                  className={`relative p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-all duration-200 hover:scale-105 hover:shadow-lg group ${cartBump ? 'animate-[cart-bump_300ms_ease-out]' : ''}`}
+                  className={`relative p-2 bg-blue-900 text-white rounded-md transition-all duration-200 hover:scale-105 hover:shadow-lg group ${cartBump ? 'animate-[cart-bump_300ms_ease-out]' : ''}`}
                   aria-label="Ir para o carrinho"
                 >
                   <ShoppingCart className="h-4 w-4" />
@@ -629,7 +621,7 @@ const Header = () => {
               ) : (
                 <button
                   onClick={() => navigate('/login')}
-                  className="relative p-2 bg-gray-400 text-white rounded-md cursor-not-allowed opacity-50"
+                  className="relative p-3 bg-blue-900 text-white rounded-md cursor-not-allowed"
                   aria-label="Faça login para acessar o carrinho"
                   title="Faça login para acessar o carrinho"
                 >
@@ -678,7 +670,7 @@ const Header = () => {
                     className="hidden sm:block h-full px-3 bg-white text-gray-700 focus:outline-none focus:ring-0 border-0 min-w-[120px] max-w-[140px] text-sm"
                     disabled={isLoadingCategories}
                   >
-                    <option value="All">Todas</option>
+                    <option value="All">Categories</option>
                     {categories.map(category => (
                       <option key={category.id} value={category.name} title={category.name}>
                         {category.name.length > 15 ? category.name.substring(0, 15) + '...' : category.name}
@@ -688,8 +680,8 @@ const Header = () => {
                   <button
                     type="submit"
                     disabled={!searchTerm.trim() || searchResults.length === 0}
-                    className="h-full px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed flex items-center gap-2"
-                    aria-label="Buscar"
+                    className={`relative p-2 mr-1 bg-blue-900 text-white rounded-md transition-all duration-200 hover:scale-105 hover:shadow-lg group ${cartBump ? 'animate-[cart-bump_300ms_ease-out]' : ''}`}
+                    aria-label="Ir para o carrinho"
                   >
                     <Search className="h-4 w-4" />
                   </button>
