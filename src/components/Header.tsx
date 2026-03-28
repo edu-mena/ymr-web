@@ -30,7 +30,9 @@ const Header = () => {
   const dropdownListRef = useRef<HTMLDivElement>(null);
   const [cartBump, setCartBump] = useState(false);
   const [isDrawerReady, setIsDrawerReady] = useState(false);
-
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [showMessagesDropdown, setShowMessagesDropdown] = useState(false);
+  const [recentMessages, setRecentMessages] = useState<any[]>([]);
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -229,6 +231,43 @@ const Header = () => {
     }
   }, [cartCount]);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadMessagesCount(0);
+      return;
+    }
+
+    const loadUnreadCount = async () => {
+      try {
+        const res = await apiFetch('/user/messages/unread-count');
+        setUnreadMessagesCount(res.unread_count || 0);
+      } catch (e) {
+        console.error('Erro ao carregar mensagens não lidas:', e);
+      }
+    };
+
+    loadUnreadCount();
+    
+    // Actualiza a cada 30 segundos
+    const interval = setInterval(loadUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !showMessagesDropdown) return;
+
+    const loadRecentMessages = async () => {
+      try {
+        const res = await apiFetch('/user/messages');
+        setRecentMessages(res.data?.slice(0, 5) || []);
+      } catch (e) {
+        console.error('Erro ao carregar mensagens recentes:', e);
+      }
+    };
+
+    loadRecentMessages();
+  }, [isAuthenticated, showMessagesDropdown]);
+
   // Preparar animação do drawer ao abrir
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -304,6 +343,20 @@ const Header = () => {
     setShowSearchDropdown(false);
   };
 
+  // ===== ADICIONAR ESTA FUNÇÃO =====
+  const handleMessagesClick = () => {
+    setShowMessagesDropdown(!showMessagesDropdown);
+    if (!showMessagesDropdown) {
+      // Marca como lidas ao abrir
+      setUnreadMessagesCount(0);
+    }
+  };
+
+  const handleViewAllMessages = () => {
+    setShowMessagesDropdown(false);
+    navigate('/userprofile?tab=messages');
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
       {/* ===== PRIMEIRA NAVBAR - NAVEGAÇÃO PRINCIPAL ===== */}
@@ -360,22 +413,114 @@ const Header = () => {
               </div>
 
               
-               {/* Settings sempre visível */}
-               {authenticatedNavItems.map((item) => {
-                 const isActive = location.pathname === item.to;
-                 return (
-                   <Link
-                     key={item.to}
-                     to={item.to}
-                     className={`relative px-2 text-sm font-medium transition-colors hover:text-blue-200 ${isActive ? 'text-blue-100' : ''} after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:bg-gradient-to-r after:from-blue-300 after:to-blue-500 after:rounded-full after:transition-all after:duration-300 ${isActive ? 'after:w-full' : 'after:w-0 hover:after:w-full'} flex items-center`}
-                     title={item.label}
-                   >
-                     <Settings className="h-4 w-4" />
-                     <span className="lg:hidden">{item.label}</span>
-                   </Link>
-                 );
-               })}
+              {/* Settings sempre visível */}
+              {authenticatedNavItems.map((item) => {
+                const isActive = location.pathname === item.to;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`relative px-2 text-sm font-medium transition-colors hover:text-blue-200 ${isActive ? 'text-blue-100' : ''} after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:bg-gradient-to-r after:from-blue-300 after:to-blue-500 after:rounded-full after:transition-all after:duration-300 ${isActive ? 'after:w-full' : 'after:w-0 hover:after:w-full'} flex items-center`}
+                    title={item.label}
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span className="lg:hidden">{item.label}</span>
+                  </Link>
+                );
+              })}
 
+              {/* ===== ADICIONAR APÓS O ÍCONE DE SETTINGS ===== */}
+              {isAuthenticated && (
+                <div className="relative">
+                  <button
+                    onClick={handleMessagesClick}
+                    className="relative p-2 text-gray-300 hover:text-white transition-colors"
+                    aria-label="Mensagens"
+                  >
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    {unreadMessagesCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+                        {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Dropdown de Mensagens */}
+                  {showMessagesDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowMessagesDropdown(false)} />
+                      <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-gray-900">Mensagens</h3>
+                            {unreadMessagesCount > 0 && (
+                              <span className="text-xs bg-red-500 text-white px-2 py-1 rounded-full">
+                                {unreadMessagesCount} nova{unreadMessagesCount > 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="max-h-96 overflow-y-auto">
+                          {recentMessages.length === 0 ? (
+                            <div className="p-6 text-center text-gray-500 text-sm">
+                              <svg className="h-12 w-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              <p>Sem mensagens</p>
+                            </div>
+                          ) : (
+                            recentMessages.map((thread) => (
+                              <button
+                                key={thread.id}
+                                onClick={() => {
+                                  setShowMessagesDropdown(false);
+                                  navigate(`/userprofile?tab=messages&thread=${thread.id}`);
+                                }}
+                                className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                                  thread.unread_count > 0 ? 'bg-blue-50' : ''
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                                    thread.unread_count > 0 ? 'bg-blue-500' : 'bg-gray-300'
+                                  }`} />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="font-medium text-gray-900 text-sm truncate">
+                                        {thread.from_user}
+                                      </span>
+                                      <span className="text-xs text-gray-500">{thread.last_message_time}</span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 truncate">{thread.subject}</p>
+                                    {thread.last_message && (
+                                      <p className="text-xs text-gray-500 truncate mt-1">
+                                        {thread.last_message.substring(0, 50)}...
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                        
+                        <div className="p-3 border-t border-gray-200 bg-gray-50">
+                          <button
+                            onClick={handleViewAllMessages}
+                            className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            Ver todas as mensagens →
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+              
               {/* Seletor de Idioma */}
               <div className="relative inline-block text-left">
                 {/* Botão que mostra a bandeira atual */}

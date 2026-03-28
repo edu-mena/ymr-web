@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { 
-  Settings as SettingsIcon, 
   Bell, 
   Palette, 
   Shield, 
@@ -73,7 +72,6 @@ const Settings = () => {
           const response = await apiFetch('/auth/profile');
           const user = response.user;
           setUserData({
-            id: user.id,
             name: user.name || '',
             email: user.email || '',
             phone: user.phone || '',
@@ -208,20 +206,6 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen page-content bg-gray-50 dark:bg-gray-900">
-      {/* ===== HEADER ===== */}
-      <section className="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-              <SettingsIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">Configurações</span>
-            </div>
-            <p className="text-lg text-blue-100 max-w-3xl mx-auto">
-              Gerencie suas preferências, notificações e configurações de segurança
-            </p>
-          </div>
-        </div>
-      </section>
 
       {/* ===== CONFIGURAÇÕES ===== */}
       <section className="py-12">
