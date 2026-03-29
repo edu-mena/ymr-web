@@ -3,8 +3,6 @@ import {
   Search,
   Filter,
   Package,
-  Grid3X3,
-  Award,
   ChevronDown,
   ChevronUp,
   X

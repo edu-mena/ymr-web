@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { 
-  User, Settings, Activity, ShoppingBag, MessageCircle, MapPin, Mail, Camera, LogOut,
-  Clock, Shield
+  User, Activity, ShoppingBag, MessageCircle, MapPin, Camera, LogOut,
+  Clock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
