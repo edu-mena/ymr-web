@@ -3,7 +3,9 @@ import {
   ArrowRight, Calendar, Clock, X, BookOpen,
   Tag, ChevronRight, Search
 } from 'lucide-react';
-import { getFeaturedPost, getRegularPosts, type BlogPost } from '../data/blogPosts';
+
+import { type BlogPost } from '../data/blogPosts'; // mantém só o tipo
+import { useBlogPosts } from '../hooks/useBlogPosts';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -267,8 +269,9 @@ const Blog = () => {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery]    = useState('');
 
-  const featuredPost  = getFeaturedPost();
-  const allRegular    = getRegularPosts();
+  const { getFeaturedPost, getRegularPosts, loading } = useBlogPosts();
+  const featuredPost = getFeaturedPost();
+  const allRegular   = getRegularPosts();
 
   // Derive unique categories
   const categories = ['All', ...Array.from(new Set(allRegular.map((p) => p.category)))];
@@ -293,33 +296,39 @@ const Blog = () => {
 
       {/* ── Hero / Header ──────────────────────────────────────────────────── */}
       <section className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
-          <div className="flex flex-col items-center text-center">
-            <div className="inline-flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full px-4 py-1.5 text-sm font-medium mb-5">
-              <BookOpen className="h-4 w-4" />
-              Insights &amp; Updates
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+          
+          <div className="flex items-center justify-between">
+            
+            {/* Espaço vazio à esquerda para balancear */}
+            <div className="w-1/3 hidden md:block" />
+
+            {/* Título central */}
+            <div className="w-full md:w-1/3 text-center">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                Last News
+              </h1>
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-5 max-w-3xl leading-tight">
-              The YMR Blog
-            </h1>
-
-            <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl leading-relaxed mb-8">
-              Expert perspectives on industrial equipment, technology, and innovation — delivered straight to you.
-            </p>
-
-            {/* Search */}
-            <div className="relative w-full max-w-md">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search articles…"
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setShowAllPosts(false); }}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 shadow-sm transition-all"
-              />
+            {/* Search à direita */}
+            <div className="w-full md:w-1/3 flex justify-end">
+              <div className="relative w-full max-w-xs">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Pesquisar…"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowAllPosts(false);
+                  }}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 shadow-sm transition-all"
+                />
+              </div>
             </div>
+
           </div>
+
         </div>
       </section>
 
@@ -354,6 +363,12 @@ const Blog = () => {
             ))}
           </div>
 
+
+          {loading && (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-600 border-t-transparent" />
+            </div>
+          )}
           {/* Grid */}
           {displayed.length > 0 ? (
             <>
