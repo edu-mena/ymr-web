@@ -418,11 +418,6 @@ const ProductPage = () => {
                 <span className={`text-sm px-2 py-1 rounded-full font-medium ${availabilityColor}`}>
                   {product.availability}
                 </span>
-                {product.price !== undefined && (
-                  <span className="text-xl font-bold text-gray-900 dark:text-white">
-                    Kz {product.price.toLocaleString('pt-AO')}
-                  </span>
-                )}
               </div>
             </div>
 
