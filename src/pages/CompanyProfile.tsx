@@ -3,6 +3,32 @@ import Modal from '../components/Modal';
 import { Download, FileText, Eye, CheckCircle, Building2, Globe, Users, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+// ===== LANGUAGE CONFIG =====
+const PROFILE_VERSIONS = [
+  {
+    id: 'en',
+    label: 'English',
+    flag: '🇬🇧',
+    file: 'assets/files/YMR%20Perfil%20da%20Empresa%20(en).pdf',
+    filename: 'YMR_Company_Profile_EN.pdf',
+    size: '8.82 MB',
+    pages: '31 pages',
+    updated: 'Mar 2026',
+  },
+  {
+    id: 'pt',
+    label: 'Português',
+    flag: '🇵🇹',
+    file: 'assets/files/YMR%20Perfil%20da%20Empresa%20(pt).pdf',
+    filename: 'YMR_Perfil_Empresa_PT.pdf',
+    size: '13.8 MB',
+    pages: '42 páginas',
+    updated: 'Mar 2026',
+  },
+] as const;
+
+type LangId = (typeof PROFILE_VERSIONS)[number]['id'];
+
 const CompanyProfile = () => {
 
   // ===== MODAL MANAGER =====
@@ -19,28 +45,25 @@ const CompanyProfile = () => {
   ];
 
   // ===== DOWNLOAD HANDLER =====
-  const downloadProfile = async () => {
-    try {
-      const response = await fetch('/api/company-profile/download');
+  const downloadProfile = (langId: LangId) => {
+    const version = PROFILE_VERSIONS.find((v) => v.id === langId);
+    if (!version) return;
 
-      if (!response.ok) {
-        throw new Error('Download failed');
-      }
+    try {
+      const link = document.createElement('a');
+      link.href = version.file;
+      link.download = version.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
       modal.closeModal('profile');
       modal.openModal('success');
-
     } catch (error) {
       console.error('Download error:', error);
       modal.closeModal('profile');
       modal.openModal('error');
     }
-  };
-
-  // ===== RETRY =====
-  const handleRetry = () => {
-    modal.closeModal('error');
-    downloadProfile();
   };
 
   return (
@@ -110,26 +133,24 @@ const CompanyProfile = () => {
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-gray-900">YMR Industrial</h3>
-                      <p className="text-blue-700 font-medium">Company Profile 2024</p>
+                      <p className="text-blue-700 font-medium">Company Profile 2025</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3">
-                      <span className="text-gray-500 text-xs">Size</span>
-                      <div className="font-semibold text-gray-900">8.2 MB</div>
-                    </div>
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3">
-                      <span className="text-gray-500 text-xs">Pages</span>
-                      <div className="font-semibold text-gray-900">42 pages</div>
-                    </div>
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3">
-                      <span className="text-gray-500 text-xs">Format</span>
-                      <div className="font-semibold text-gray-900">PDF</div>
-                    </div>
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3">
-                      <span className="text-gray-500 text-xs">Updated</span>
-                      <div className="font-semibold text-gray-900">Jan 2025</div>
-                    </div>
+
+                  {/* Two language versions side by side */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {PROFILE_VERSIONS.map((v) => (
+                      <div key={v.id} className="bg-white/80 backdrop-blur-sm rounded-lg p-3 text-sm">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="text-base leading-none">{v.flag}</span>
+                          <span className="font-semibold text-gray-900">{v.label}</span>
+                        </div>
+                        <div className="space-y-1 text-xs text-gray-500">
+                          <div>{v.size} · {v.pages}</div>
+                          <div>Updated {v.updated}</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -175,16 +196,41 @@ const CompanyProfile = () => {
         </div>
       </section>
 
-      {/* ===== MODAL: CONFIRM DOWNLOAD ===== */}
+      {/* ===== MODAL: CHOOSE LANGUAGE ===== */}
       <Modal
         isOpen={modal.isOpen('profile')}
         onClose={() => modal.closeModal('profile')}
         title="YMR Industrial — Company Profile"
         description={
           <>
-            <p className="mb-4">
-              The full Company Profile is available as a PDF download. It covers our history, products, certifications, and key partnerships.
+            <p className="mb-6">
+              The Company Profile is available in two languages. Choose your preferred version below.
             </p>
+
+            {/* Language download cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              {PROFILE_VERSIONS.map((v) => (
+                <button
+                  key={v.id}
+                  onClick={() => downloadProfile(v.id)}
+                  className="group flex flex-col items-start gap-2 border-2 border-gray-100 hover:border-blue-500 bg-gray-50 hover:bg-blue-50 rounded-xl p-4 text-left transition-all duration-200"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl leading-none">{v.flag}</span>
+                    <span className="font-semibold text-gray-900 group-hover:text-blue-700">{v.label}</span>
+                  </div>
+                  <div className="text-xs text-gray-500 space-y-0.5">
+                    <div>{v.size} · {v.pages}</div>
+                    <div>Updated {v.updated}</div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-blue-600 text-xs font-semibold mt-1 group-hover:gap-2 transition-all">
+                    <Download className="h-3.5 w-3.5" />
+                    Download PDF
+                  </div>
+                </button>
+              ))}
+            </div>
+
             <p className="text-sm text-gray-500">
               Need a custom presentation or have specific questions?{' '}
               <Link
@@ -201,11 +247,6 @@ const CompanyProfile = () => {
         iconColor="blue-600"
         iconBackground="blue-100"
         actions={[
-          {
-            label: 'Download PDF',
-            onClick: downloadProfile,
-            variant: 'primary',
-          },
           {
             label: 'Cancel',
             variant: 'secondary',
@@ -243,7 +284,7 @@ const CompanyProfile = () => {
         actions={[
           {
             label: 'Try again',
-            onClick: handleRetry,
+            onClick: () => modal.openModal('profile'),
             variant: 'primary',
           },
           {

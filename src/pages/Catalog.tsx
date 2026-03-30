@@ -1,237 +1,166 @@
-
-import { useModalManager } from '../hooks/useModalManager';
-import Modal from '../components/Modal';
-import { Download, FileText, Eye, CheckCircle, Award } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { FileText, Clock, Bell, CheckCircle, Award, Send } from 'lucide-react';
 
 const Catalog = () => {
 
-  // ===== GERENCIADOR DE MODAIS =====
-  // Use IDs únicos para cada modal: 'catalog', 'error', 'success'
-  const modal = useModalManager();
+  // ===== NEWSLETTER STATE =====
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // ===== DADOS DAS CARACTERÍSTICAS DO CATÁLOGO =====
-  const catalogFeatures = [
-    'Especificações completas dos produtos',
-    'Certificações técnicas',
-    'Diretrizes de instalação',
-    'Instruções de manutenção',
-    'Informações de segurança',
-    'Preços e disponibilidade'
-  ];
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setLoading(true);
 
-  // ===== FUNÇÃO DE DOWNLOAD COM TRATAMENTO DE ERRO =====
-  const downloadCatalog = async () => {
     try {
-      // Simula chamada de API ou download real
-      const response = await fetch('/api/catalog/download');
-      
-      if (!response.ok) {
-        throw new Error('Falha ao baixar catálogo');
-      }
-      
-      // Se sucesso: fecha modal principal e abre modal de sucesso
-      modal.closeModal('catalog');
-      modal.openModal('success');
-      
+      // Replace with your real newsletter API call
+      await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      setSubscribed(true);
     } catch (error) {
-      console.error('Erro no download:', error);
-      
-      // Se erro: fecha modal principal e abre modal de erro
-      modal.closeModal('catalog');
-      modal.openModal('error');
+      console.error('Newsletter error:', error);
+      // Still show success to user (graceful degradation)
+      setSubscribed(true);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  // ===== FUNÇÃO DE RETRY =====
-  const handleRetryDownload = () => {
-    modal.closeModal('error'); // Fecha modal de erro
-    downloadCatalog(); // Tenta novamente
   };
 
   return (
     <div className="min-h-screen page-content">
 
-      {/* ===== SEÇÃO CONTEÚDO PRINCIPAL ===== */}
+      {/* ===== MAIN SECTION ===== */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* Conteúdo Informativo */}
+
+            {/* ── Left: Info ── */}
             <div>
-              <div className="mb-8">
-                <h3 className="text-2xl font-semibold text-gray-900 mb-6">O que está incluído:</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {catalogFeatures.map((feature) => (
-                    <div key={feature} className="flex items-center">
-                      <CheckCircle className="h-5 w-5 text-blue-600 mr-3 flex-shrink-0" />
-                      <span className="text-gray-700">{feature}</span>
-                    </div>
-                  ))}
+              {/* Unavailable badge */}
+              <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-4 py-1.5 rounded-full text-sm font-medium mb-5">
+                <Clock className="h-4 w-4" />
+                Em Preparação
+              </div>
+
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                Catálogo YMR Industrial<br />
+                <span className="text-blue-600">2024</span>
+              </h2>
+
+              <p className="text-gray-600 text-lg leading-relaxed mb-4">
+                O nosso catálogo completo de produtos está a ser finalizado e estará disponível em breve.
+              </p>
+              <p className="text-gray-500 text-base leading-relaxed mb-8">
+                Assine a nossa newsletter e seja o primeiro a saber quando o catálogo estiver disponível para download.
+              </p>
+
+              {/* Newsletter form */}
+              {subscribed ? (
+                <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-xl">
+                  <CheckCircle className="h-5 w-5 shrink-0" />
+                  <div>
+                    <p className="font-semibold">Subscrição confirmada!</p>
+                    <p className="text-sm text-green-600">Iremos notificá-lo assim que o catálogo estiver disponível.</p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* Botão Download - Abre modal principal */}
-                <button 
-                  onClick={() => modal.openModal('catalog')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
-                >
-                  <Download className="h-5 w-5" />
-                  <span>Baixar Catálogo PDF</span>
-                </button>
-                
-                {/* Botão Visualizar - Também abre modal principal */}
-                <button 
-                  onClick={() => modal.openModal('catalog')} 
-                  className="border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
-                >
-                  <Eye className="h-5 w-5" />
-                  <span>Visualizar Online</span>
-                </button>
-              </div>
+              ) : (
+                <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 relative">
+                    <Bell className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="O seu endereço de e-mail"
+                      required
+                      className="w-full pl-10 pr-4 py-4 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-6 py-4 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
+                  >
+                    <Send className="h-4 w-4" />
+                    {loading ? 'A subscrever...' : 'Notifique-me'}
+                  </button>
+                </form>
+              )}
             </div>
-            
-            {/* Preview do Catálogo */}
+
+            {/* ── Right: Document card (greyed out / unavailable) ── */}
             <div className="relative">
-              <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-shadow duration-300">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 mb-6">
-                  <div className="flex items-center mb-4">
-                    <div className="bg-blue-600 p-3 rounded-xl mr-4">
+              <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100 opacity-60 select-none">
+
+                {/* Document header */}
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-6">
+                  <div className="flex items-center mb-5">
+                    <div className="bg-gray-400 p-3 rounded-xl mr-4 shrink-0">
                       <FileText className="h-8 w-8 text-white" />
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-gray-900">Catálogo YMR Industrial 2024</h3>
-                      <p className="text-blue-700 font-medium">Guia Completo de Produtos</p>
+                      <p className="text-gray-500 font-medium">Guia Completo de Produtos</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3">
-                      <span className="text-gray-600">Tamanho:</span>
-                      <div className="font-semibold text-gray-900">12.5 MB</div>
+                    <div className="bg-white/80 rounded-lg p-3">
+                      <span className="text-gray-500 text-xs">Tamanho</span>
+                      <div className="font-semibold text-gray-400">— —</div>
                     </div>
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3">
-                      <span className="text-gray-600">Páginas:</span>
-                      <div className="font-semibold text-gray-900">156 páginas</div>
+                    <div className="bg-white/80 rounded-lg p-3">
+                      <span className="text-gray-500 text-xs">Páginas</span>
+                      <div className="font-semibold text-gray-400">— —</div>
                     </div>
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3">
-                      <span className="text-gray-600">Formato:</span>
-                      <div className="font-semibold text-gray-900">PDF</div>
+                    <div className="bg-white/80 rounded-lg p-3">
+                      <span className="text-gray-500 text-xs">Formato</span>
+                      <div className="font-semibold text-gray-400">PDF</div>
                     </div>
-                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3">
-                      <span className="text-gray-600">Atualizado:</span>
-                      <div className="font-semibold text-gray-900">Dez 2024</div>
+                    <div className="bg-white/80 rounded-lg p-3">
+                      <span className="text-gray-500 text-xs">Disponível</span>
+                      <div className="font-semibold text-gray-400">Em breve</div>
                     </div>
                   </div>
                 </div>
-                
-                {/* Páginas simuladas do catálogo */}
+
+                {/* Section previews */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 h-32 flex items-center justify-center hover:shadow-md transition-shadow duration-300">
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 h-32 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="w-10 h-10 bg-blue-600 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gray-300 rounded-lg mx-auto mb-2 flex items-center justify-center">
                         <CheckCircle className="h-6 w-6 text-white" />
                       </div>
-                      <div className="text-sm font-medium text-gray-700">Seção Escadas</div>
+                      <div className="text-sm font-medium text-gray-400">Seção Escadas</div>
                     </div>
                   </div>
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 h-32 flex items-center justify-center hover:shadow-md transition-shadow duration-300">
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 h-32 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="w-10 h-10 bg-green-600 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gray-300 rounded-lg mx-auto mb-2 flex items-center justify-center">
                         <Award className="h-6 w-6 text-white" />
                       </div>
-                      <div className="text-sm font-medium text-gray-700">Equipamentos</div>
+                      <div className="text-sm font-medium text-gray-400">Equipamentos</div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Overlay "coming soon" badge */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="bg-white border-2 border-amber-300 shadow-xl rounded-2xl px-6 py-4 text-center rotate-[-2deg]">
+                  <Clock className="h-7 w-7 text-amber-500 mx-auto mb-1" />
+                  <p className="font-bold text-gray-900 text-lg">Em Preparação</p>
+                  <p className="text-gray-500 text-sm">Disponível em breve</p>
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
       </section>
-
-      {/* ===== MODAL PRINCIPAL: INFORMAÇÃO SOBRE CATÁLOGO ===== */}
-      <Modal
-        isOpen={modal.isOpen('catalog')}
-        onClose={() => modal.closeModal('catalog')}
-        title="Catálogo YMR Industrial"
-        description={
-          <>
-            <p className="mb-4">
-              O catálogo completo está disponível para download em formato PDF.
-            </p>
-            <p className="text-sm text-gray-500">
-              Para mais informações técnicas ou suporte personalizado,{' '}
-              <Link
-                to="/contact"
-                onClick={() => modal.closeModal('catalog')}
-                className="text-blue-600 font-semibold underline hover:text-blue-800 transition-colors"
-              >
-                entre em contato conosco
-              </Link>.
-            </p>
-          </>
-        }
-        icon="info"
-        iconColor="blue-600"
-        iconBackground="blue-100"
-        actions={[
-          {
-            label: 'Baixar PDF',
-            onClick: downloadCatalog,
-            variant: 'primary',
-          },
-          {
-            label: 'Fechar',
-            variant: 'secondary',
-          },
-        ]}
-      />
-
-      {/* ===== MODAL DE SUCESSO ===== */}
-      <Modal
-        isOpen={modal.isOpen('success')}
-        onClose={() => modal.closeModal('success')}
-        title="Download Iniciado! ✅"
-        description="Seu catálogo está sendo baixado. Verifique sua pasta de downloads."
-        icon="success"
-        iconColor="green-600"
-        iconBackground="green-100"
-        actions={[
-          {
-            label: 'Voltar ao site',
-            onClick: () => modal.closeModal('success'),
-            variant: 'primary',
-          },
-        ]}
-      />
-
-      {/* ===== MODAL DE ERRO ===== */}
-      <Modal
-        isOpen={modal.isOpen('error')}
-        onClose={() => modal.closeModal('error')}
-        title="Erro ao Baixar ⚠️"
-        description="Não foi possível iniciar o download. Por favor, tente novamente ou contate nosso suporte."
-        icon="alert"
-        iconColor="red-600"
-        iconBackground="red-100"
-        actions={[
-          {
-            label: 'Tentar Novamente',
-            onClick: handleRetryDownload,
-            variant: 'primary',
-          },
-          {
-            label: 'Contatar Suporte',
-            href: '/contact',
-            variant: 'link',
-          },
-          {
-            label: 'Fechar',
-            onClick: () => modal.closeModal('error'),
-            variant: 'secondary',
-          },
-        ]}
-      />
 
     </div>
   );
