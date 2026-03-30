@@ -10,11 +10,12 @@ import QuickContact from './components/QuickContact';
 import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import Products from './pages/Products';
-import Categories from './pages/Categories';
 import About from './pages/About';
 import Catalog from './pages/Catalog';
+import CompanyProfile from './pages/CompanyProfile';
 import Contact from './pages/Contact';
 import Service from './pages/Services';
+import Blog from './pages/Blog';
 import UserProfile from './pages/UserProfile';
 import Settings from './pages/Settings';
 import ProductPage from './pages/ProductPage';
@@ -54,9 +55,10 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Products />} />
-            <Route path="/categories" element={<Categories />} />
             <Route path="/about" element={<About />} />
+            <Route path="/company-profile" element={<CompanyProfile />} />
             <Route path="/catalog" element={<Catalog />} />
+            <Route path="/blog" element={<Blog />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/services" element={<Service />} />
             <Route path="/userprofile" element={<RequireAuth><UserProfile /></RequireAuth>} />

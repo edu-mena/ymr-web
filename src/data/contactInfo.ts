@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin, Clock } from 'lucide-react'; // ou de onde vierem seus ícones
+import { Phone, Mail, MapPin, Clock } from 'lucide-react';
 
 export const contactInfo = [
   {

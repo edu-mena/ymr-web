@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, User, ShoppingCart, X, ArrowRight, Menu, Settings, Home, Mail, Info, Wrench } from 'lucide-react';
+import { Search, User, ShoppingCart, X, ArrowRight, Menu, Settings, Home, Mail, Info, Wrench, BookOpen, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { apiFetch } from '../services/api';
@@ -177,6 +177,7 @@ const Header = () => {
     { to: '/contact', label: 'Contact' },
     { to: '/about', label: 'About Us' },
     { to: '/services', label: 'Services' },
+    { to: '/blog', label: 'Blog' },
   ];
 
   // ===== LINKS ADICIONAIS PARA USUÁRIOS AUTENTICADOS =====
@@ -387,6 +388,13 @@ const Header = () => {
                 className={`relative text-sm font-medium transition-colors hover:text-blue-200 ${location.pathname === '/catalog' ? 'text-blue-100' : ''} after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:bg-gradient-to-r after:from-blue-300 after:to-blue-500 after:rounded-full after:transition-all after:duration-300 ${location.pathname === '/catalog' ? 'after:w-full' : 'after:w-0 hover:after:w-full'}`}
               >
                 Catalog
+              </Link>
+
+              <Link
+                to="/company-profile"
+                className={`relative text-sm font-medium transition-colors hover:text-blue-200 ${location.pathname === '/company-profile' ? 'text-blue-100' : ''} after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:bg-gradient-to-r after:from-blue-300 after:to-blue-500 after:rounded-full after:transition-all after:duration-300 ${location.pathname === '/company-profile' ? 'after:w-full' : 'after:w-0 hover:after:w-full'}`}
+              >
+                Company Profile
               </Link>
               
               {/* Conta, Login/Logout */}
@@ -624,7 +632,7 @@ const Header = () => {
                     </div>
                     <input
                       type="text"
-                      placeholder="Buscar equipamentos, ferramentas, EPIs..."
+                      placeholder="Search for equipment, tools, PPE..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       onFocus={() => searchTerm.length >= 2 && setShowSearchDropdown(true)}
@@ -938,6 +946,7 @@ const Header = () => {
                     {item.to === '/contact' && <Mail className="h-4 w-4" />}
                     {item.to === '/about' && <Info className="h-4 w-4" />}
                     {item.to === '/services' && <Wrench className="h-4 w-4" />}
+                    {item.to === '/blog' && <BookOpen className="h-4 w-4" />}
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -964,6 +973,14 @@ const Header = () => {
               >
                 <ShoppingCart className="h-4 w-4" />
                 <span>Catalog</span>
+              </Link>
+              <Link
+                to="/company-profile"
+                onClick={closeMobileMenu}
+                className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${location.pathname === '/company-profile' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${location.pathname === '/company-profile' ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
+              >
+                <Building2 className="h-4 w-4" />
+                <span>Company Profile</span>
               </Link>
               {!isAuthenticated ? (
                 <Link

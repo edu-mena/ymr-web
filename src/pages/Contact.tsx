@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { contactInfo } from '../data/contactInfo';
-import { contactFaqs } from '../data/contactData';
+// integração com a API real usando o hook personalizado (descomente quando tiver a API pronta)
+import { useContactPage } from '../hooks/useContactPage';
 import {
-  MapPin, Send, MessageCircle, Phone, Mail,
+  Send, MessageCircle, Phone, Mail,
   CheckCircle, AlertCircle, User, Building,
   ChevronDown, ChevronUp, Star
 } from 'lucide-react';
@@ -11,6 +11,7 @@ import { apiFetch } from '../services/api';
 
 const Contact = () => {
   const { isAuthenticated, user } = useAuth();
+  const { info: contactInfo, faqs: contactFaqs, map: contactMap } = useContactPage();
 
   type ContactFormData = {
     fullName: string;
@@ -109,10 +110,6 @@ const Contact = () => {
       {/* HERO */}
       <section className="relative bg-gray-50 text-white py-6 overflow-hidden">
         <div className="relative max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center bg-blue-100 space-x-2 text-blue-900 backdrop-blur-sm rounded-full px-4 py-2">
-            <MessageCircle className="h-5 w-5" />
-            <span className="text-sm font-medium">Get in Touch</span>
-          </div>
         </div>
       </section>
 
@@ -334,24 +331,42 @@ const Contact = () => {
               </div>
             </div>
           </div>
-
           {/* Mapa */}
           <div className="mt-12 md:mt-16">
-            <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-2xl h-64 md:h-80 flex items-center justify-center relative overflow-hidden shadow-lg">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
-              <div className="relative text-center text-gray-600 dark:text-gray-300 z-10 px-4">
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full p-4 md:p-6 inline-block mb-3 md:mb-4">
-                  <MapPin className="h-8 w-8 md:h-12 md:w-12 text-blue-600 mx-auto" />
+            <div className="relative rounded-2xl h-64 md:h-80 overflow-hidden shadow-lg group">
+
+              {contactMap && (
+                <iframe
+                  src={`https://www.google.com/maps?q=${contactMap.lat},${contactMap.lng}&z=17&output=embed`}
+                  className="absolute inset-0 w-full h-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              )}
+
+              <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-black/60 flex items-center justify-center transition-opacity duration-300 group-hover:opacity-0">
+                <div className="text-center text-white z-10 px-4">
+                  <h3 className="text-lg md:text-xl font-semibold mb-2">
+                    {contactMap?.title ?? 'Visit Our Office'}
+                  </h3>
+                  <p className="text-sm md:text-base mb-1">
+                    {contactMap?.address ?? ''}
+                  </p>
+                  <p className="text-sm md:text-base">
+                    {contactMap?.city ?? ''}
+                  </p>
+                  <button
+                    onClick={() => window.open(contactMap?.directionsUrl ?? '#', '_blank')}
+                    className="mt-4 bg-blue-600 text-white px-4 md:px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm md:text-base"
+                  >
+                    Get Directions
+                  </button>
                 </div>
-                <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-white mb-2">Visit Our Office</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-1 text-sm md:text-base">Rua Principal nº 123</p>
-                <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base">Luanda, Angola</p>
-                <button className="mt-3 md:mt-4 bg-blue-600 text-white px-4 md:px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm md:text-base">
-                  Get Directions
-                </button>
               </div>
+
             </div>
           </div>
+
         </div>
       </section>
 

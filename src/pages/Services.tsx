@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wrench, Database, CheckCircle, ArrowRight, ChevronLeft, ChevronRight, Target, Eye, Cog } from 'lucide-react';
+import { CheckCircle, ChevronLeft, ChevronRight, Target, Eye, Cog } from 'lucide-react';
 import { localServices, aboudServices, aboudStats } from '../data/servicesData';
 
 const Services = () => {
@@ -43,10 +43,6 @@ const Services = () => {
       <section className="py-20 bg-gray-50 dark:bg-gray-800 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center space-x-2 bg-blue-100 rounded-full px-4 py-2 mb-6">
-              <Wrench className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">Local Services</span>
-            </div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Serviços Locais</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Aluguer de equipamentos industriais pesados com tecnologia de ponta, suporte técnico especializado e manutenção completa incluída.

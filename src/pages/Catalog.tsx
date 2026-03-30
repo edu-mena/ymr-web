@@ -55,20 +55,6 @@ const Catalog = () => {
       {/* ===== SEÇÃO CONTEÚDO PRINCIPAL ===== */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center space-x-2 bg-blue-100 rounded-full px-4 py-2 mb-6">
-              <FileText className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">Catálogo Completo</span>
-            </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-              Catálogo de Soluções Industriais Completas
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Nosso catálogo abrangente contém informações detalhadas sobre todos os nossos produtos industriais, 
-              incluindo especificações técnicas, certificações e diretrizes de aplicação.
-            </p>
-          </div>
-          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             {/* Conteúdo Informativo */}
             <div>

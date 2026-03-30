@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useActivityLog } from '../hooks/useActivityLog';
 import {
   ShoppingCart, Heart, Share2, Shield,
-  ChevronLeft, ChevronRight, Download, FileText, Truck, Phone,
+  ChevronLeft, ChevronRight, Download, FileText, Truck, 
   AlertCircle, Info, Zap, Settings, X, CheckCircle, Eye,
   PlayCircle
 } from 'lucide-react';
