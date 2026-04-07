@@ -1,113 +1,101 @@
 // src/services/api.ts
 const DEFAULT_BASE_URL = 'https://violet-moose-215968.hostingersite.com/backend';
 
-// ─── VERIFICAÇÃO DE TOKEN ────────────────────────────────────────────────────
-
-/**
- * Verifica se o token JWT está expirado.
- */
-function isTokenExpired(token: string): boolean {
-  try {
-    const payloadBase64 = token.split('.')[1];
-    const payload = JSON.parse(atob(payloadBase64));
-    return payload.exp * 1000 < Date.now();
-  } catch {
-    return true; // Token inválido → considerar expirado
-  }
-}
-
-// ─── CONFIGURAÇÃO DA BASE URL ────────────────────────────────────────────────
-
-/**
- * Obtém a URL base da API.
- * Prioridade: variável de ambiente VITE > localStorage > valor padrão.
- */
 export function getApiBaseUrl(): string {
   const envBase = (import.meta as any)?.env?.VITE_API_BASE_URL as string | undefined;
-  const storedBase =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('apiBaseUrl') || undefined
-      : undefined;
-  return (envBase || storedBase || DEFAULT_BASE_URL).replace(/\/$/, ''); // remove barra final
+  return (envBase || DEFAULT_BASE_URL).replace(/\/$/, '');
 }
 
-// ─── OBTENÇÃO DO TOKEN ───────────────────────────────────────────────────────
+// ─── FETCH CENTRALIZADO ───────────────────────────────────────────────────────
+// credentials:'include' envia o cookie httpOnly automaticamente.
+// noAuth: para rotas verdadeiramente públicas (produtos, blog, etc.)
+// silent: para rotas de registo/telemetria que nunca devem disparar refresh
+//         nem mostrar erros ao utilizador (ex: user/activities)
 
-/**
- * Obtém o token de autenticação válido (não expirado).
- * Limpa o token do localStorage caso esteja expirado.
- */
-export function getAuthToken(): string | undefined {
-  const envToken = (import.meta as any)?.env?.VITE_API_TOKEN as string | undefined;
-  if (envToken) return envToken;
+let isRefreshing    = false;
+let refreshPromise: Promise<boolean> | null = null; // partilhado entre pedidos concorrentes
 
-  if (typeof window !== 'undefined') {
-    // Suporta ambas as chaves usadas no projecto
-    const storedToken =
-      localStorage.getItem('ymr_access_token') ||
-      localStorage.getItem('accessToken');
+async function tryRefresh(base: string): Promise<boolean> {
+  // Se já há um refresh em curso, aguarda o mesmo resultado
+  if (refreshPromise) return refreshPromise;
 
-    if (storedToken && !isTokenExpired(storedToken)) {
-      return storedToken;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${base}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'User-Agent': 'YMR-React-App/1.0' },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      // Liberta sempre — mesmo em excepção — para não ficar preso
+      refreshPromise = null;
+      isRefreshing   = false;
     }
+  })();
 
-    // Token expirado → limpa tudo
-    localStorage.removeItem('ymr_access_token');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('ymr_auth_user');
-  }
-
-  return undefined;
+  isRefreshing = true;
+  return refreshPromise;
 }
 
-// ─── FETCH CENTRALIZADO ──────────────────────────────────────────────────────
+function dispatchSessionExpired(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('ymr_auth_user');
+  window.dispatchEvent(new Event('ymr:session-expired'));
+}
 
-/**
- * Função centralizada para todas as requisições à API REST.
- *
- * @param path   - Caminho relativo, ex: '/auth/login'
- * @param init   - Opções do fetch (method, body, headers…)
- *                 + campo extra `noAuth` para ignorar o token JWT
- */
 export async function apiFetch(
   path: string,
-  init: RequestInit & { noAuth?: boolean } = {}
-) {
-  const base = getApiBaseUrl();
-  const token = init.noAuth ? undefined : getAuthToken();
-
-  // Garante que o path começa sempre com '/'
+  init: RequestInit & { noAuth?: boolean; _retry?: boolean; silent?: boolean } = {}
+): Promise<any> {
+  const base           = getApiBaseUrl();
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const url = `${base}${normalizedPath}`;
+  const url            = `${base}${normalizedPath}`;
 
   const headers: Record<string, string> = {
-    // Obrigatório: o Hostinger bloqueia requisições sem User-Agent
     'User-Agent': 'YMR-React-App/1.0',
   };
 
-  // Só define Content-Type se NÃO for FormData (multipart é gerido pelo browser)
   if (!(init.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
 
-  // Injeta token JWT se existir e não for uma rota pública
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  // Headers do chamador têm prioridade sobre os defaults
-  const mergedHeaders: Record<string, string> = {
-    ...headers,
-    ...(init.headers as Record<string, string> | undefined),
-  };
+  const { noAuth, _retry, silent, ...fetchInit } = init;
 
   const res = await fetch(url, {
-    ...init,
-    headers: mergedHeaders,
+    ...fetchInit,
+    headers: {
+      ...headers,
+      ...(fetchInit.headers as Record<string, string> | undefined),
+    },
+    credentials: noAuth ? 'omit' : 'include',
   });
 
+  // ── Auto-refresh em 401 ───────────────────────────────────────────────────
+  if (res.status === 401 && !_retry && !noAuth) {
+    // Rotas silenciosas (telemetria, actividade): não tentam refresh,
+    // não mostram erros — apenas falham silenciosamente.
+    if (silent) return null;
+
+    const refreshed = await tryRefresh(base);
+
+    if (refreshed) {
+      // Repete o pedido original com o novo cookie
+      return apiFetch(path, { ...init, _retry: true });
+    }
+
+    // Refresh falhou → sessão expirada
+    dispatchSessionExpired();
+    // Propaga o erro para quem chamou possa reagir (ex: redirecionar)
+    throw new Error('Sessão expirada. Por favor inicie sessão novamente.');
+  }
+
   if (!res.ok) {
-    // Tenta extrair mensagem de erro do corpo JSON
+    // Rotas silenciosas falham sem lançar excepção
+    if (silent) return null;
+
     let errorMessage: string;
     try {
       const json = await res.json();
@@ -119,4 +107,12 @@ export async function apiFetch(
   }
 
   return res.json();
+}
+
+// ─── Logout ───────────────────────────────────────────────────────────────────
+export async function apiLogout(): Promise<void> {
+  try {
+    await apiFetch('/auth/logout', { method: 'POST' });
+  } catch { /* silencioso */ }
+  dispatchSessionExpired();
 }

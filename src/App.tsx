@@ -1,9 +1,10 @@
 // src/App.tsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import QuickContact from './components/QuickContact';
@@ -21,6 +22,7 @@ import Settings from './pages/Settings';
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/cartPage';
 import Login from './pages/Login';
+import NotFound from './pages/NotFound';
 
 function TopChrome() {
   const location = useLocation();
@@ -48,7 +50,7 @@ function AppContent() {
   return (
     // ✅ PASSA user?.id ao CartProvider
     <CartProvider userId={user?.id ?? null}>
-      <div className="min-h-screen bg-white dark:bg-gray-900">
+      <div className="min-h-screen bg-white">
         <ScrollToTop />
         <TopChrome />
         <main>
@@ -62,10 +64,11 @@ function AppContent() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/services" element={<Service />} />
             <Route path="/userprofile" element={<RequireAuth><UserProfile /></RequireAuth>} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
             <Route path="/product/:id" element={<ProductPage />} />
             <Route path="/cart" element={<RequireAuth><CartPage /></RequireAuth>} />
             <Route path="/login" element={<Login />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         <BottomChrome />
@@ -76,8 +79,9 @@ function AppContent() {
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
   if (!isAuthenticated) {
-    return <Login />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   return <>{children}</>;
 }
@@ -85,11 +89,13 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Router>
-      <ThemeProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </ThemeProvider>
+      </LanguageProvider>
     </Router>
   );
 }

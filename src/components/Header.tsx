@@ -3,8 +3,57 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, User, ShoppingCart, X, ArrowRight, Menu, Settings, Home, Mail, Info, Wrench, BookOpen, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useLanguage } from '../context/LanguageContext';
 import { apiFetch } from '../services/api';
 
+// ===== GLOBAL TYPE DECLARATION =====
+declare global {
+  interface Window {
+    google?: {
+      translate?: {
+        TranslateElement?: unknown;
+        getElement?: (id: string) => unknown;
+      };
+    };
+  }
+}
+
+// ===== HELPER: ACIONAR O GOOGLE TRANSLATE =====
+function triggerGoogleTranslate(targetLang: string, attempts = 0) {
+  const MAX_ATTEMPTS = 20;
+
+  const googleSelect = document.querySelector<HTMLSelectElement>('.goog-te-combo');
+  const isApiReady =
+    typeof window.google !== 'undefined' &&
+    typeof window.google.translate !== 'undefined' &&
+    typeof window.google.translate.TranslateElement !== 'undefined';
+
+  if (googleSelect && isApiReady) {
+    if (targetLang === 'en') {
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`;
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname}`;
+
+      googleSelect.value = '';
+      googleSelect.dispatchEvent(new Event('change'));
+
+      localStorage.setItem('ymr_language', 'en');
+      sessionStorage.setItem('googtrans_disabled', 'true');
+      setTimeout(() => window.location.reload(), 100);
+    } else {
+      const cookieValue = `/en/${targetLang}`;
+      document.cookie = `googtrans=${cookieValue}; path=/`;
+      document.cookie = `googtrans=${cookieValue}; path=/; domain=${window.location.hostname}`;
+
+      googleSelect.value = targetLang;
+      googleSelect.dispatchEvent(new Event('change'));
+    }
+  } else if (attempts < MAX_ATTEMPTS) {
+    setTimeout(() => triggerGoogleTranslate(targetLang, attempts + 1), 300);
+  } else {
+    console.warn('[i18n] Google Translate widget not ready after maximum attempts.');
+  }
+}
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -21,8 +70,7 @@ const Header = () => {
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const { cartCount } = useCart();
-  const [currentLanguage, setCurrentLanguage] = useState('pt');
-  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+  const { language: currentLanguage, setLanguage } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [activeResultIndex, setActiveResultIndex] = useState<number>(-1);
@@ -33,20 +81,32 @@ const Header = () => {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [showMessagesDropdown, setShowMessagesDropdown] = useState(false);
   const [recentMessages, setRecentMessages] = useState<any[]>([]);
+
+  useEffect(() => {
+    const getCookie = (name: string) => {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? match[2] : null;
+    };
+    const googtrans = getCookie('googtrans');
+    if (googtrans && googtrans.includes('/pt')) {
+      setLanguage('pt');
+    } else {
+      setLanguage('en');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // ===== FECHAMENTO COM ESC E BLOQUEIO DE SCROLL QUANDO MENU MOBILE ABERTO =====
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        setIsLanguageOpen(false);
         setIsMobileMenuOpen(false);
         setShowSearchDropdown(false);
         setIsSearchExpanded(false);
@@ -57,7 +117,6 @@ const Header = () => {
   }, []);
 
   useEffect(() => {
-    // Bloquear scroll do body quando o menu mobile está aberto
     if (isMobileMenuOpen) {
       const original = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
@@ -67,18 +126,15 @@ const Header = () => {
     }
   }, [isMobileMenuOpen]);
 
-  // Fechar menu mobile ao mudar de rota
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsSearchExpanded(false);
   }, [location.pathname]);
 
-  // ===== CARREGAR CATEGORIAS DA API =====
   useEffect(() => {
     async function loadCategories() {
       setIsLoadingCategories(true);
       try {
-        // Chama rota /categories (mais genérica) para evitar 400 com category_id inválido
         const res = await apiFetch('/categories?isActive=true&limit=100', { noAuth: true });
         const categoriesData = res?.data || res || [];
 
@@ -95,7 +151,6 @@ const Header = () => {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error('Erro ao carregar categorias:', message);
-        // Fallback para categorias hardcoded em caso de erro
         setCategories([
           { id: '1', name: 'Adesivos, Selantes e Fitas' },
           { id: '2', name: 'Equipamentos de Pintura' },
@@ -111,7 +166,6 @@ const Header = () => {
     loadCategories();
   }, []);
 
-  // ===== BUSCA EM TEMPO REAL COM DEBOUNCE =====
   useEffect(() => {
     const timeoutId = setTimeout(async () => {
       if (searchTerm.trim().length >= 2) {
@@ -120,8 +174,8 @@ const Header = () => {
         try {
           const url = new URL('/products', 'http://local');
           url.searchParams.set('search', searchTerm.trim());
-          url.searchParams.set('limit', '2'); // Limitar a 2 resultados
-          
+          url.searchParams.set('limit', '2');
+
           const selectedCatObj = categories.find((c) => c.name === selectedCategory);
           if (selectedCatObj && selectedCategory !== 'All') {
             url.searchParams.set('categoryId', selectedCatObj.id);
@@ -129,7 +183,7 @@ const Header = () => {
 
           const data = await apiFetch(url.pathname + '?' + url.searchParams.toString());
           const list: any[] = data?.data || [];
-          
+
           const mapped = list.map((p: any) => ({
             id: p.id || p._id || String(p.code || p.name),
             name: p.name,
@@ -139,7 +193,7 @@ const Header = () => {
             brand: p.brand?.name,
             price: p.price,
           }));
-          
+
           setSearchResults(mapped);
           setShowSearchDropdown(true);
         } catch (e: any) {
@@ -154,24 +208,21 @@ const Header = () => {
         setShowSearchDropdown(false);
         setHasSearched(false);
       }
-    }, 300); // Debounce de 300ms
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm, selectedCategory, categories]);
 
-  // ===== FECHAR DROPDOWN AO CLICAR FORA =====
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSearchDropdown(false);
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ===== LINKS DA PRIMEIRA NAVBAR =====
   const primaryNavItems = [
     { to: '/', label: 'Home' },
     { to: '/contact', label: 'Contact' },
@@ -180,50 +231,46 @@ const Header = () => {
     { to: '/blog', label: 'Blog' },
   ];
 
-  // ===== LINKS ADICIONAIS PARA USUÁRIOS AUTENTICADOS =====
   const authenticatedNavItems = [
     { to: '/settings', label: 'Settings' },
   ];
 
-  // ===== DADOS DOS IDIOMAS =====
-  // Array contendo as opções de idioma disponíveis
   const languages = [
+    { code: 'en', flagUrl: 'https://flagcdn.com/w40/gb.png', alt: 'English' },
     { code: 'pt', flagUrl: 'https://flagcdn.com/w40/pt.png', alt: 'Português' },
-    { code: 'en', flagUrl: 'https://flagcdn.com/w40/gb.png', alt: 'English' }
   ];
 
-  // ===== FUNÇÕES DE MANIPULAÇÃO =====
-  // Função para alternar o menu de idiomas
+  function applyLanguage(code: string) {
+    setLanguage(code as 'en' | 'pt');
+    triggerGoogleTranslate(code);
+  }
+
   function toggleLanguageMenu() {
-    setIsLanguageOpen(!isLanguageOpen);
+    const next = currentLanguage === 'en' ? 'pt' : 'en';
+    applyLanguage(next);
   }
 
   function selectLanguage(code: string) {
-    setCurrentLanguage(code);
-    setIsLanguageOpen(false);
+    if (code === currentLanguage) return;
+    applyLanguage(code);
   }
 
-  // Função para alternar o menu mobile
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  // Função para fechar o menu mobile
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
 
-  // Função para expandir/contrair a busca no mobile
   const toggleSearchExpanded = () => {
     setIsSearchExpanded(!isSearchExpanded);
   };
 
-  // Resetar seleção ativa quando termo ou dropdown mudarem
   useEffect(() => {
     setActiveResultIndex(-1);
   }, [searchTerm, showSearchDropdown]);
 
-  // Efeito de microinteração no carrinho quando a contagem muda
   useEffect(() => {
     if (cartCount && cartCount > 0) {
       setCartBump(true);
@@ -248,8 +295,6 @@ const Header = () => {
     };
 
     loadUnreadCount();
-    
-    // Actualiza a cada 30 segundos
     const interval = setInterval(loadUnreadCount, 30000);
     return () => clearInterval(interval);
   }, [isAuthenticated]);
@@ -269,7 +314,6 @@ const Header = () => {
     loadRecentMessages();
   }, [isAuthenticated, showMessagesDropdown]);
 
-  // Preparar animação do drawer ao abrir
   useEffect(() => {
     if (isMobileMenuOpen) {
       setIsDrawerReady(false);
@@ -280,7 +324,6 @@ const Header = () => {
     }
   }, [isMobileMenuOpen]);
 
-  // Navegação por teclado nos resultados da busca
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showSearchDropdown) return;
     const max = searchResults.length - 1;
@@ -307,24 +350,20 @@ const Header = () => {
     }
   };
 
-  // Função para lidar com a busca
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchTerm.trim() || searchResults.length === 0) return;
-    
-    // Construir URL com parâmetros de busca
+
     const searchParams = new URLSearchParams();
     searchParams.set('search', searchTerm.trim());
     if (selectedCategory && selectedCategory !== 'All') {
       searchParams.set('category', selectedCategory);
     }
-    
-    // Redirecionar para página de produtos com parâmetros
+
     navigate(`/products?${searchParams.toString()}`);
     setShowSearchDropdown(false);
   };
 
-  // Função para limpar busca
   const clearSearch = () => {
     setSearchTerm('');
     setSearchResults([]);
@@ -332,23 +371,19 @@ const Header = () => {
     setHasSearched(false);
   };
 
-  // Função para ver mais resultados
   const handleViewMore = () => {
     const searchParams = new URLSearchParams();
     searchParams.set('search', searchTerm.trim());
     if (selectedCategory && selectedCategory !== 'All') {
       searchParams.set('category', selectedCategory);
     }
-    
     navigate(`/products?${searchParams.toString()}`);
     setShowSearchDropdown(false);
   };
 
-  // ===== ADICIONAR ESTA FUNÇÃO =====
   const handleMessagesClick = () => {
     setShowMessagesDropdown(!showMessagesDropdown);
     if (!showMessagesDropdown) {
-      // Marca como lidas ao abrir
       setUnreadMessagesCount(0);
     }
   };
@@ -358,14 +393,14 @@ const Header = () => {
     navigate('/userprofile?tab=messages');
   };
 
+  const currentLangData = languages.find(l => l.code === currentLanguage) ?? languages[0];
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
       {/* ===== PRIMEIRA NAVBAR - NAVEGAÇÃO PRINCIPAL ===== */}
-      {/* Navbar superior com fundo azul escuro e navegação principal */}
-      <div className="bg-gray-900 dark:bg-gray-950 text-white hidden md:block">
+      <div className="bg-gray-900 text-white hidden md:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-12">
-            {/* Primeira Div - Links de Navegação com sublinhado gradiente animado */}
             <div className="relative flex items-center space-x-6">
               {primaryNavItems.map((item) => {
                 const isActive = location.pathname === item.to;
@@ -381,7 +416,6 @@ const Header = () => {
               })}
             </div>
 
-            {/* Segunda Div - Catálogo, Conta e Idioma */}
             <div className="flex items-center space-x-4">
               <Link
                 to="/catalog"
@@ -396,8 +430,7 @@ const Header = () => {
               >
                 Company Profile
               </Link>
-              
-              {/* Conta, Login/Logout */}
+
               <div className="flex items-center gap-3">
                 {!isAuthenticated ? (
                   <Link
@@ -420,8 +453,6 @@ const Header = () => {
                 )}
               </div>
 
-              
-              {/* Settings sempre visível */}
               {authenticatedNavItems.map((item) => {
                 const isActive = location.pathname === item.to;
                 return (
@@ -437,7 +468,6 @@ const Header = () => {
                 );
               })}
 
-              {/* ===== ADICIONAR APÓS O ÍCONE DE SETTINGS ===== */}
               {isAuthenticated && (
                 <div className="relative">
                   <button
@@ -455,7 +485,6 @@ const Header = () => {
                     )}
                   </button>
 
-                  {/* Dropdown de Mensagens */}
                   {showMessagesDropdown && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowMessagesDropdown(false)} />
@@ -470,7 +499,7 @@ const Header = () => {
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="max-h-96 overflow-y-auto">
                           {recentMessages.length === 0 ? (
                             <div className="p-6 text-center text-gray-500 text-sm">
@@ -487,19 +516,13 @@ const Header = () => {
                                   setShowMessagesDropdown(false);
                                   navigate(`/userprofile?tab=messages&thread=${thread.id}`);
                                 }}
-                                className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                                  thread.unread_count > 0 ? 'bg-blue-50' : ''
-                                }`}
+                                className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${thread.unread_count > 0 ? 'bg-blue-50' : ''}`}
                               >
                                 <div className="flex items-start gap-3">
-                                  <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                                    thread.unread_count > 0 ? 'bg-blue-500' : 'bg-gray-300'
-                                  }`} />
+                                  <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${thread.unread_count > 0 ? 'bg-blue-500' : 'bg-gray-300'}`} />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-1">
-                                      <span className="font-medium text-gray-900 text-sm truncate">
-                                        {thread.from_user}
-                                      </span>
+                                      <span className="font-medium text-gray-900 text-sm truncate">{thread.from_user}</span>
                                       <span className="text-xs text-gray-500">{thread.last_message_time}</span>
                                     </div>
                                     <p className="text-sm text-gray-600 truncate">{thread.subject}</p>
@@ -514,7 +537,7 @@ const Header = () => {
                             ))
                           )}
                         </div>
-                        
+
                         <div className="p-3 border-t border-gray-200 bg-gray-50">
                           <button
                             onClick={handleViewAllMessages}
@@ -528,78 +551,32 @@ const Header = () => {
                   )}
                 </div>
               )}
-              
-              {/* Seletor de Idioma */}
-              <div className="relative inline-block text-left">
-                {/* Botão que mostra a bandeira atual */}
-                <button
-                  onClick={toggleLanguageMenu}
-                  className="flex items-center space-x-1 text-sm font-medium hover:text-blue-700 transition-colors z-[9999]"
-                  aria-haspopup="true"
-                  aria-expanded={isLanguageOpen}
-                >
-                  <span className="inline-block w-6 h-4 overflow-hidden rounded-sm">
-                    <img
-                      src={languages.find(lang => lang.code === currentLanguage)?.flagUrl}
-                      alt={languages.find(lang => lang.code === currentLanguage)?.alt || currentLanguage}
-                      className="w-full h-auto object-cover"
-                      draggable={false}
-                    />
-                  </span>
-                  <svg
-                    className="h-4 w-4 text-gray-500"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.25 8.27a.75.75 0 01-.02-1.06z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
 
-                {/* Dropdown de seleção */}
-                {isLanguageOpen && (
-                  <div className="absolute right-0 mt-2 w-20 bg-white rounded-md shadow-lg py-1 z-[9999]">
-                    {languages.map((language) => (
-                      <button
-                        key={language.code}
-                        onClick={() => selectLanguage(language.code)}
-                        className="flex items-center justify-center w-full px-3 py-2 hover:bg-gray-100 transition-colors"
-                        aria-label={`Selecionar idioma ${language.alt}`}
-                      >
-                        <span className="inline-block w-7 h-5 overflow-hidden rounded-sm">
-                          <img
-                            src={language.flagUrl}
-                            alt={language.alt}
-                            className="w-full h-auto object-cover"
-                            draggable={false}
-                          />
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
+              <button
+                onClick={toggleLanguageMenu}
+                className="flex items-center gap-1 px-2 py-1 text-sm font-medium hover:text-blue-300 transition-colors"
+                title={currentLanguage === 'en' ? 'Switch to Portuguese' : 'Switch to English'}
+              >
+                <span className="inline-block w-6 h-4 overflow-hidden rounded-sm">
+                  <img
+                    src={currentLangData.flagUrl}
+                    alt={currentLangData.alt}
+                    className="w-full h-auto object-cover"
+                    draggable={false}
+                  />
+                </span>
+                <span className="ml-1 text-xs uppercase">{currentLanguage}</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
       {/* ===== SEGUNDA NAVBAR - LOGO, BUSCA E PRODUTOS ===== */}
-      {/* Navbar inferior com logo, caixa de busca e link para produtos */}
-      <div className={`bg-[#e6e6e6] dark:bg-gray-700 shadow-md transition-all duration-300 ${
-        isScrolled ? 'shadow-lg' : ''
-      }`}>
+      <div className={`bg-[#e6e6e6] shadow-md transition-all duration-300 ${isScrolled ? 'shadow-lg' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 md:h-16">
-            {/* Primeira Div - Logo da Empresa */}
             <div className="flex items-center space-x-2">
-              {/* Botão Menu Mobile */}
               <button
                 type="button"
                 onClick={toggleMobileMenu}
@@ -609,19 +586,15 @@ const Header = () => {
               >
                 <Menu className="h-6 w-6" />
               </button>
-              {/* <div className="bg-red-600 p-2 rounded-lg">
-                <Wrench className="h-6 w-6 text-white" />
-              </div> */}
               <Link to="/" aria-label="Ir para a página inicial">
                 <img src="https://ymrindustrial.com/assets/ymrlogo.png" alt="YMR Industrial" className="h-7 md:h-8" />
               </Link>
-              {/* <span className="text-xl font-bold text-gray-900">YMR Industrial</span> */}
             </div>
 
-            {/* Segunda Div - Caixa de Busca Moderna com Dropdown */}
+            {/* Busca Desktop */}
             <div className="hidden md:block flex-1 max-w-3xl mx-8">
               <div ref={searchRef} className="relative">
-                <form onSubmit={handleSearch} className="flex items-center h-10 bg-white dark:bg-gray-600 rounded-xl shadow-lg border border-gray-200 dark:border-gray-500 overflow-hidden">
+                <form onSubmit={handleSearch} className="flex items-center h-10 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                   <div className="relative flex-1 h-full min-w-0">
                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
                       {isSearching ? (
@@ -648,7 +621,6 @@ const Header = () => {
                         <X className="h-5 w-5" />
                       </button>
                     )}
-                    
                   </div>
                   <div className="h-8 w-px bg-gray-300"></div>
                   <select
@@ -673,7 +645,6 @@ const Header = () => {
                   </button>
                 </form>
 
-                {/* Dropdown de Resultados */}
                 {showSearchDropdown && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden">
                     {isSearching ? (
@@ -722,8 +693,6 @@ const Header = () => {
                             </div>
                           </div>
                         ))}
-                        
-                        {/* Botão Ver Mais */}
                         <div className="p-4 border-t border-gray-100">
                           <button
                             onClick={handleViewMore}
@@ -740,9 +709,8 @@ const Header = () => {
               </div>
             </div>
 
-            {/* Terceira Div - Link para Produtos e Carrinho */}
+            {/* Produtos e Carrinho */}
             <div className="flex items-center space-x-2 md:space-x-4">
-              {/* Botão Busca Mobile */}
               <button
                 type="button"
                 onClick={toggleSearchExpanded}
@@ -783,6 +751,7 @@ const Header = () => {
               )}
             </div>
           </div>
+
           {/* Barra de busca Mobile expandida */}
           {isSearchExpanded && (
             <div className="md:hidden pb-3">
@@ -833,8 +802,8 @@ const Header = () => {
                   <button
                     type="submit"
                     disabled={!searchTerm.trim() || searchResults.length === 0}
-                    className={`relative p-2 mr-1 bg-blue-900 text-white rounded-md transition-all duration-200 hover:scale-105 hover:shadow-lg group ${cartBump ? 'animate-[cart-bump_300ms_ease-out]' : ''}`}
-                    aria-label="Ir para o carrinho"
+                    className="relative p-2 mr-1 bg-blue-900 text-white rounded-md transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                    aria-label="Pesquisar"
                   >
                     <Search className="h-4 w-4" />
                   </button>
@@ -908,30 +877,26 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Overlay para fechar dropdown quando clicar fora */}
-      {isLanguageOpen && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setIsLanguageOpen(false)}
-        />
-      )}
-
-      {/* Drawer Mobile */}
+      {/* ===== DRAWER MOBILE ===== */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[70]">
-          <div className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${isDrawerReady ? 'opacity-100' : 'opacity-0'}`} onClick={closeMobileMenu} />
-          <div className={`absolute left-0 top-0 bottom-0 w-72 max-w-[80vw] bg-white dark:bg-gray-800 shadow-2xl p-6 overflow-y-auto transform transition-transform duration-200 ${isDrawerReady ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div
+            className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${isDrawerReady ? 'opacity-100' : 'opacity-0'}`}
+            onClick={closeMobileMenu}
+          />
+          <div className={`absolute left-0 top-0 bottom-0 w-72 max-w-[80vw] bg-white shadow-2xl p-6 overflow-y-auto transform transition-transform duration-200 ${isDrawerReady ? 'translate-x-0' : '-translate-x-full'}`}>
             <div className="flex items-center justify-between mb-6">
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">Menu</span>
+              <span className="text-lg font-semibold text-gray-900">Menu</span>
               <button
                 type="button"
                 onClick={closeMobileMenu}
-                className="p-2 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 aria-label="Fechar menu"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
+
             <nav className="space-y-1">
               {primaryNavItems.map((item) => {
                 const isActive = location.pathname === item.to;
@@ -940,7 +905,7 @@ const Header = () => {
                     key={item.to}
                     to={item.to}
                     onClick={closeMobileMenu}
-                    className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${isActive ? 'dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${isActive ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
+                    className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 font-medium transition-all duration-200 hover:bg-gray-100 ${isActive ? 'bg-blue-50 text-blue-600' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${isActive ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
                   >
                     {item.to === '/' && <Home className="h-4 w-4" />}
                     {item.to === '/contact' && <Mail className="h-4 w-4" />}
@@ -951,7 +916,7 @@ const Header = () => {
                   </Link>
                 );
               })}
-              {/* Settings sempre visível no mobile */}
+
               {authenticatedNavItems.map((item) => {
                 const isActive = location.pathname === item.to;
                 return (
@@ -959,34 +924,37 @@ const Header = () => {
                     key={item.to}
                     to={item.to}
                     onClick={closeMobileMenu}
-                    className={`relative flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${isActive ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${isActive ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
+                    className={`relative flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-800 font-medium transition-all duration-200 hover:bg-gray-100 ${isActive ? 'bg-blue-50 text-blue-600' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${isActive ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
                   >
                     <Settings className="h-4 w-4" />
                     <span>{item.label}</span>
                   </Link>
                 );
               })}
+
               <Link
                 to="/catalog"
                 onClick={closeMobileMenu}
-                className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${location.pathname === '/catalog' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${location.pathname === '/catalog' ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
+                className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 font-medium transition-all duration-200 hover:bg-gray-100 ${location.pathname === '/catalog' ? 'bg-blue-50 text-blue-600' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${location.pathname === '/catalog' ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
               >
                 <ShoppingCart className="h-4 w-4" />
                 <span>Catalog</span>
               </Link>
+
               <Link
                 to="/company-profile"
                 onClick={closeMobileMenu}
-                className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${location.pathname === '/company-profile' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${location.pathname === '/company-profile' ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
+                className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 font-medium transition-all duration-200 hover:bg-gray-100 ${location.pathname === '/company-profile' ? 'bg-blue-50 text-blue-600' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${location.pathname === '/company-profile' ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
               >
                 <Building2 className="h-4 w-4" />
                 <span>Company Profile</span>
               </Link>
+
               {!isAuthenticated ? (
                 <Link
                   to="/login"
                   onClick={closeMobileMenu}
-                  className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${location.pathname === '/login' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${location.pathname === '/login' ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
+                  className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 font-medium transition-all duration-200 hover:bg-gray-100 ${location.pathname === '/login' ? 'bg-blue-50 text-blue-600' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${location.pathname === '/login' ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
                 >
                   <User className="h-4 w-4" />
                   <span>Login</span>
@@ -995,25 +963,27 @@ const Header = () => {
                 <Link
                   to="/UserProfile"
                   onClick={closeMobileMenu}
-                  className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 dark:text-gray-200 font-medium transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${location.pathname === '/UserProfile' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${location.pathname === '/UserProfile' ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
+                  className={`relative flex items-center gap-2 px-3 py-2 rounded-lg text-gray-800 font-medium transition-all duration-200 hover:bg-gray-100 ${location.pathname === '/UserProfile' ? 'bg-blue-50 text-blue-600' : ''} after:content-[''] after:absolute after:left-3 after:bottom-2 after:h-[2px] after:bg-gradient-to-r after:from-blue-400 after:to-blue-600 after:rounded-full after:transition-all after:duration-300 ${location.pathname === '/UserProfile' ? 'after:w-[calc(100%-1.5rem)]' : 'after:w-0 hover:after:w-[calc(100%-1.5rem)]'}`}
                 >
                   <User className="h-4 w-4" />
                   <span>{user?.name?.split(' ')[0] || 'Conta'}</span>
                 </Link>
               )}
-              
-              {/* Removido item duplicado de Settings no final da lista */}
             </nav>
 
-            {/* Idiomas */}
+            {/* ===== SELETOR DE IDIOMA MOBILE ===== */}
             <div className="mt-6">
-              <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Idioma</div>
+              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Language</div>
               <div className="flex items-center gap-3">
                 {languages.map((language) => (
                   <button
                     key={language.code}
                     onClick={() => selectLanguage(language.code)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${currentLanguage === language.code ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${
+                      currentLanguage === language.code
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:bg-gray-50'
+                    }`}
                   >
                     <span className="inline-block w-6 h-4 overflow-hidden rounded-sm">
                       <img
@@ -1023,7 +993,7 @@ const Header = () => {
                         draggable={false}
                       />
                     </span>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{language.alt}</span>
+                    <span className="text-sm text-gray-700">{language.alt}</span>
                   </button>
                 ))}
               </div>

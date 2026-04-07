@@ -9,7 +9,7 @@ import AsideNewsletter from "../components/AsideNewsletter";
 import AsideGif from "../components/AsideGif";
 import { usePromoPopup } from "../hooks/usePromoPopup";
 import { Link } from 'react-router-dom';
-import { ArrowRight, Download } from 'lucide-react';
+import { ArrowRight, Download, Wrench, Shield, Cog } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { heroSlides } from '../data/heroSlides';
 //import { adSlides } from "../data/adSlides";
@@ -18,19 +18,19 @@ import { features } from "../data/features";
 import { gif } from "../data/gif";
 
 const Home = () => {
-  // ===== ESTADO DO SLIDER =====
+  // ===== SLIDER STATE =====
   const [currentSlide, setCurrentSlide] = useState(0);
   const { open, close } = usePromoPopup(8000);
   const [categories, setCategories] = useState<{ id: string; name: string; image?: string }[]>([]);
   const [isLoadingCats, setIsLoadingCats] = useState(false);
   const [catsError, setCatsError] = useState<string | null>(null);
 
-  // ===== FUNÇÕES DE CONTROLE DO SLIDER =====
+  // ===== SLIDER CONTROL FUNCTIONS =====
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
   };
 
-  // ===== AUTO-PLAY DOS SLIDERS =====
+  // ===== SLIDER AUTO-PLAY =====
   useEffect(() => {
     const interval = setInterval(() => {
       nextSlide();
@@ -43,11 +43,11 @@ const Home = () => {
       setIsLoadingCats(true);
       setCatsError(null);
       try {
-        // Chama a nova rota /categories da API PHP
+        // Calls the new /categories route from the PHP API
         const res = await apiFetch('/categories', { noAuth: true });
         const categoriesData = res?.data || [];
         
-        // Mapeia para o formato esperado pelo componente
+        // Maps to the format expected by the component
         const formattedCategories = categoriesData.map((cat: any) => ({
           id: cat.id,
           name: cat.name,
@@ -56,8 +56,8 @@ const Home = () => {
         
         setCategories(formattedCategories);
       } catch (e: any) {
-        console.error('Erro ao carregar categorias:', e);
-        setCatsError(e.message || 'Falha ao carregar categorias');
+        console.error('Error loading categories:', e);
+        setCatsError(e.message || 'Failed to load categories');
       } finally {
         setIsLoadingCats(false);
       }
@@ -66,7 +66,7 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="min-h-screen page-content bg-white dark:bg-gray-900">
+    <div className="min-h-screen page-content bg-white">
       {/* ===== POPUP PROMOCIONAL ===== */}
       <PromoPopup open={open} onClose={close} />
 
@@ -74,20 +74,20 @@ const Home = () => {
       <HeroSlider slides={heroSlides as any} heightClass="h-[60vh] md:h-[70vh]" />
 
       {/* ===== SEÇÃO PRODUTOS E ASIDE ===== */}
-      <section className="py-10 bg-white dark:bg-gray-900">
+      <section className="py-10 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Layout Flex para Desktop e Stack para Mobile */}
           <div className="flex flex-col lg:flex-row gap-8">
             
             <div className="flex-1 min-w-0">
               {/* ===== SEÇÃO "POR QUE ESCOLHER A YMR" ===== */}
-              <section className="py-8 md:py-10 bg-gray-50 dark:bg-gray-800">
+              <section className="py-8 md:py-10 bg-gray-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="text-center mb-6 md:mb-8">
-                    <h2 className="text-2xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                    <h2 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
                       Why Choose YMR Industrial?
                     </h2>
-                    <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                    <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
                       We combine quality products with exceptional service to support your industrial needs.
                     </p>
                   </div>
@@ -112,6 +112,62 @@ const Home = () => {
 
                 </div>
               </section>
+
+              {/* ===== BANNER SERVIÇOS ===== */}
+              <Link
+                to="/services"
+                className="block group bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 my-8"
+              >
+                <div className="px-6 py-8 md:px-8 md:py-10">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+                    <div>
+                      <h3 className="text-xl md:text-2xl font-bold mb-1">
+                        Our Services
+                      </h3>
+                      <p className="text-gray-900 text-sm md:text-base">
+                        Complete maintenance, technical support and equipment rental solutions.
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center gap-2 text-blue-400 group-hover:text-blue-300 text-sm font-semibold flex-shrink-0">
+                      Learn more
+                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-4 group-hover:bg-gray-100 transition-colors">
+                      <div className="bg-blue-600/20 rounded-lg p-2.5 flex-shrink-0">
+                        <Wrench className="h-5 w-5 text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Maintenance</p>
+                        <p className="text-xs">Preventive and corrective maintenance</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-4 group-hover:bg-gray-100 transition-colors">
+                      <div className="bg-green-600/20 rounded-lg p-2.5 flex-shrink-0">
+                        <Shield className="h-5 w-5 text-green-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Technical Support</p>
+                        <p className="text-xs">Certified team available 24/7</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-4 group-hover:bg-gray-100 transition-colors">
+                      <div className="bg-orange-600/20 rounded-lg p-2.5 flex-shrink-0">
+                        <Cog className="h-5 w-5 text-orange-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Equipment Rental</p>
+                        <p className="text-xs">Compressors, generators and more</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
               {/* ==== título ==== */}
               <div className="text-left mb-10 md:mb-16">
                 <h2 className="text-2xl md:text-4xl font-bold text-gray-900 mt-6 md:mt-10">
@@ -125,7 +181,7 @@ const Home = () => {
               <div className="flex-1">
                 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-[30px]">
                   {isLoadingCats && (
-                    <div className="text-gray-600">Carregando categorias...</div>
+                    <div className="text-gray-600">Loading categories...</div>
                   )}
                   {catsError && (
                     <div className="text-red-600">{catsError}</div>
@@ -185,34 +241,13 @@ const Home = () => {
       </section>
 
       {/* Bloco do Aside abaixo do conteúdo em Mobile/Tablet */}
-      <section className="py-8 bg-white dark:bg-gray-900 lg:hidden">
+      <section className="py-8 bg-white lg:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="space-y-6">
             {/* Notícias, Newsletter e Produtos em Destaque */}
             <AsideNewsletter />
             <ProductMiniSlider useApi={true} limit={3} />
             <NewsCarousel />
-          </div>
-        </div>
-      </section>
-
-      {/* ===== SEÇÃO CALL-TO-ACTION ===== */}
-      <section className="section-padding py-10 bg-red-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Ready to Get Started?
-          </h2>
-          <p className="text-xl text-red-100 mb-8 max-w-2xl mx-auto">
-            Download our comprehensive product catalog with specifications, certifications, and technical sheets.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/catalog" className="bg-white text-red-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center gap-2">
-              <Download className="h-5 w-5" />
-              Download PDF Catalog
-            </Link>
-            <Link to="/contact" className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-red-600 transition-colors duration-200">
-              Contact Us Today
-            </Link>
           </div>
         </div>
       </section>

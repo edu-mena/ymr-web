@@ -1,6 +1,8 @@
 // pages/UserProfile/features/MessagesTab/features/ContactPanel.tsx
-import { MessageCircle, RefreshCw, ChevronLeft } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { MessageCircle, RefreshCw, ChevronLeft, Send } from 'lucide-react';
 import { ContactThread, ThreadDetails } from '../../types';
+import { apiFetch } from '../../../../../services/api';
 
 interface Props {
   userMessages: ContactThread[];
@@ -21,6 +23,57 @@ export default function ContactPanel({
   onBack,
   onRefresh,
 }: Props) {
+  const [replyText, setReplyText]     = useState('');
+  const [sending, setSending]         = useState(false);
+  const [localMessages, setLocalMessages] = useState(threadDetails?.messages ?? []);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Sincroniza mensagens locais quando a thread muda
+  useEffect(() => {
+    setLocalMessages(threadDetails?.messages ?? []);
+    setReplyText('');
+  }, [threadDetails]);
+
+  // Scroll automático para a última mensagem
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [localMessages]);
+
+  const handleSendReply = async () => {
+    const content = replyText.trim();
+    if (!content || !selectedThread || sending) return;
+
+    setSending(true);
+    try {
+      await apiFetch(`/user/messages/${selectedThread}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
+
+      // Adiciona a mensagem localmente sem recarregar tudo
+      const newMsg = {
+        id:          crypto.randomUUID(),
+        content,
+        sender_type: 'user' as const,
+        sender_name: 'Você',
+        created_at:  new Date().toLocaleString('pt-PT'),
+      };
+      setLocalMessages(prev => [...prev, newMsg]);
+      setReplyText('');
+    } catch (e) {
+      console.error('Erro ao enviar resposta:', e);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendReply();
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
@@ -90,10 +143,11 @@ export default function ContactPanel({
 
       {/* ── Detalhe da thread ── */}
       <div className={`lg:col-span-2 ${!selectedThread ? 'hidden lg:block' : ''}`}>
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden flex flex-col">
           {selectedThread && threadDetails ? (
             <>
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
+              {/* Header */}
+              <div className="p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={onBack}
@@ -108,8 +162,9 @@ export default function ContactPanel({
                 </div>
               </div>
 
-              <div className="p-4 max-h-[500px] overflow-y-auto space-y-4 bg-gray-50">
-                {threadDetails.messages.map(msg => (
+              {/* Mensagens */}
+              <div className="flex-1 p-4 max-h-[420px] overflow-y-auto space-y-4 bg-gray-50">
+                {localMessages.map(msg => (
                   <div
                     key={msg.id}
                     className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -128,6 +183,37 @@ export default function ContactPanel({
                     </div>
                   </div>
                 ))}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Campo de resposta */}
+              <div className="p-4 border-t border-gray-200 bg-white flex-shrink-0">
+                <div className="flex gap-3 items-end">
+                  <textarea
+                    value={replyText}
+                    onChange={e => setReplyText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Escreva a sua resposta… (Enter para enviar, Shift+Enter para nova linha)"
+                    rows={3}
+                    className="flex-1 resize-none px-4 py-3 text-sm border border-gray-200 rounded-xl
+                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
+                      bg-gray-50 text-gray-900 placeholder-gray-400 transition-all"
+                  />
+                  <button
+                    onClick={handleSendReply}
+                    disabled={!replyText.trim() || sending}
+                    className="flex-shrink-0 flex items-center gap-2 px-4 py-3 bg-indigo-600
+                      hover:bg-indigo-700 text-white text-sm font-medium rounded-xl
+                      disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {sending ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    Enviar
+                  </button>
+                </div>
               </div>
             </>
           ) : (

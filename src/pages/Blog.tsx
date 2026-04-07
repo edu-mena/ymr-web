@@ -3,6 +3,8 @@ import {
   ArrowRight, Calendar, Clock, X, BookOpen,
   Tag, ChevronRight, Search
 } from 'lucide-react';
+import NewsletterSubscribe from '../components/NewsletterSubscribe';
+import DOMPurify from 'dompurify';
 
 import { type BlogPost } from '../data/blogPosts'; // mantém só o tipo
 import { useBlogPosts } from '../hooks/useBlogPosts';
@@ -103,7 +105,7 @@ function PostModal({ post, onClose }: PostModalProps) {
               prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:underline
               prose-strong:text-gray-800
               prose-li:text-gray-600"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
           />
         </div>
 
@@ -292,10 +294,10 @@ const Blog = () => {
   const closeModal = ()               => setSelectedPost(null);
 
   return (
-    <div className="min-h-screen page-content bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen page-content bg-gray-50">
 
       {/* ── Hero / Header ──────────────────────────────────────────────────── */}
-      <section className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+      <section className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
           
           <div className="flex items-center justify-between">
@@ -305,7 +307,7 @@ const Blog = () => {
 
             {/* Título central */}
             <div className="w-full md:w-1/3 text-center">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
                 Last News
               </h1>
             </div>
@@ -420,32 +422,8 @@ const Blog = () => {
       </section>
 
       {/* ── Newsletter strip ───────────────────────────────────────────────── */}
-      <section className="bg-indigo-600 dark:bg-indigo-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-14 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            Stay in the loop
-          </h2>
-          <p className="text-indigo-200 mb-7 text-base">
-            Get the latest articles, industry insights, and product news delivered to your inbox.
-          </p>
-          <form
-            onSubmit={(e) => e.preventDefault()}
-            className="flex flex-col sm:flex-row items-center gap-3 justify-center max-w-md mx-auto"
-          >
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="w-full sm:flex-1 px-4 py-3 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/40 bg-white"
-            />
-            <button
-              type="submit"
-              className="w-full sm:w-auto bg-white text-indigo-700 hover:bg-indigo-50 font-semibold text-sm px-6 py-3 rounded-xl transition-colors duration-200 shrink-0"
-            >
-              Subscribe
-            </button>
-          </form>
-          <p className="text-indigo-300 text-xs mt-4">No spam, ever. Unsubscribe at any time.</p>
-        </div>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 mb-12">
+        <NewsletterSubscribe variant="inline" />
       </section>
 
       {/* ── Modal ──────────────────────────────────────────────────────────── */}

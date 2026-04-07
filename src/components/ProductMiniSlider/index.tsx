@@ -70,16 +70,16 @@ export default function ProductMiniSlider({
   const { index, pause, resume } = useAutoSlide(displayProducts.length, delay, false);
 
   return (<>
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-      <div className="bg-[#e6e6e6] dark:from-gray-800 dark:to-gray-900 text-dark p-4">
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="bg-[#e6e6e6] p-4">
         <h3 className="font-bold flex items-center gap-2">
           <TrendingUp className="h-5 w-5" />
-          Produtos em Destaque
+          Featured Products
         </h3>
         <div className="relative h-48 w-full" onMouseEnter={pause} onMouseLeave={resume}>
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-white text-sm">Carregando produtos...</div>
+              <div className="text-white text-sm">Loading products...</div>
             </div>
           ) : error ? (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -87,7 +87,7 @@ export default function ProductMiniSlider({
             </div>
           ) : displayProducts.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-gray-300 text-sm">Nenhum produto encontrado</div>
+              <div className="text-gray-300 text-sm">No products found</div>
             </div>
           ) : (
             displayProducts.map((p, i) => (
@@ -126,7 +126,7 @@ export default function ProductMiniSlider({
               to="/products"
               className="w-full mt-[2rem] bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors"
             >
-              Ver Mais Produtos
+              See More Products
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

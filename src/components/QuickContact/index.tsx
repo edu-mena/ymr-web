@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { MessageSquare, X } from "lucide-react";
 
 export default function QuickContact() {
-  console.log("QuickContact renderizou");
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
     { id: 1, text: "Olá! Como podemos ajudar você hoje?", fromSupport: true, timestamp: new Date() }
@@ -53,9 +52,9 @@ export default function QuickContact() {
 
       {/* Janela de chat */}
       {open && (
-        <div className="fixed bottom-20 right-6 w-80 max-w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl flex flex-col z-50">
+        <div className="fixed bottom-20 right-6 w-80 max-w-full bg-white rounded-lg shadow-xl flex flex-col z-50">
           {/* Cabeçalho */}
-          <div className="flex items-center justify-between bg-blue-600 dark:bg-blue-700 text-white rounded-t-lg px-4 py-2">
+          <div className="flex items-center justify-between bg-blue-600 text-white rounded-t-lg px-4 py-2">
             <h2 className="font-semibold text-lg">Suporte</h2>
             <button
               onClick={() => setOpen(false)}
@@ -67,18 +66,18 @@ export default function QuickContact() {
           </div>
 
           {/* Mensagens */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 max-h-[400px] bg-gray-50 dark:bg-gray-700 flex flex-col">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 max-h-[400px] bg-gray-50 flex flex-col">
             {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`max-w-[75%] p-2 rounded-lg flex flex-col ${
                   msg.fromSupport
-                    ? "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 self-start items-start"
+                    ? "bg-blue-100 text-blue-800 self-start items-start"
                     : "bg-blue-600 text-white self-end items-end"
                 }`}
               >
                 <span>{msg.text}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 select-none">
+                <span className="text-xs text-gray-500 mt-1 select-none">
                   {formatTime(msg.timestamp)}
                 </span>
               </div>
@@ -92,18 +91,18 @@ export default function QuickContact() {
               e.preventDefault();
               sendMessage();
             }}
-            className="flex border-t border-gray-300 dark:border-gray-600"
+            className="flex border-t border-gray-300"
           >
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Digite sua mensagem..."
-              className="flex-1 px-3 py-2 outline-none rounded-bl-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+              className="flex-1 px-3 py-2 outline-none rounded-bl-lg bg-white text-gray-900 placeholder-gray-500"
             />
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-br-lg transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-br-lg transition-colors"
             >
               Enviar
             </button>

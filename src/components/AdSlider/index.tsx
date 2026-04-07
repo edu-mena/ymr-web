@@ -1,20 +1,29 @@
 // src/components/AdSlider/index.tsx
-import React from "react";
 import { Link } from "react-router-dom";
-import { blogPosts } from "../../data/BlogPosts";
+import { useBlogPosts } from "../../hooks/useBlogPosts";
 import { useAutoSlide } from "../../hooks/useAutoSlide";
 
 type Props = { delay?: number; height?: string };
 
 export default function AdSlider({ delay = 4000, height = "h-48" }: Props) {
-  // Garantir pelo menos 3 posts
-  const posts = blogPosts.slice(0, Math.max(3, blogPosts.length));
+  const { posts, loading } = useBlogPosts();
+  const displayPosts = posts.slice(0, Math.max(3, posts.length));
 
   const { index, next, prev, pause, resume } = useAutoSlide(
-    posts.length,
+    displayPosts.length || 1,
     delay,
     false
   );
+
+  if (loading) {
+    return (
+      <div className={`relative ${height} w-full bg-gray-100 rounded-lg flex items-center justify-center`}>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (displayPosts.length === 0) return null;
 
   return (
     <div
@@ -22,14 +31,14 @@ export default function AdSlider({ delay = 4000, height = "h-48" }: Props) {
       onMouseEnter={pause}
       onMouseLeave={resume}
     >
-      {posts.map((post, i) => (
+      {displayPosts.map((post, i) => (
         <article
           key={post.id}
           className={`absolute inset-0 p-4 transition-opacity duration-500 ${
             i === index ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
-          <div className="rounded-lg h-full flex items-stretch overflow-hidden shadow-lg bg-white dark:bg-gray-800">
+          <div className="rounded-lg h-full flex items-stretch overflow-hidden shadow-lg bg-white">
             
             {/* Imagem */}
             <div className="w-1/3 bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center">
@@ -41,17 +50,17 @@ export default function AdSlider({ delay = 4000, height = "h-48" }: Props) {
             </div>
 
             {/* Conteúdo */}
-            <div className="flex-1 p-5 text-gray-900 dark:text-gray-100 flex flex-col justify-between">
+            <div className="flex-1 p-5 text-gray-900 flex flex-col justify-between">
               <div>
                 <span className="inline-block text-xs bg-indigo-600 text-white px-2 py-1 rounded mb-2">
                   {post.category}
                 </span>
 
-                <h4 className="font-bold text-lg text-gray-900 dark:text-white">
+                <h4 className="font-bold text-lg text-gray-900">
                   {post.title}
                 </h4>
 
-                <p className="mt-3 text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
+                <p className="mt-3 text-sm text-gray-600 line-clamp-3">
                   {post.excerpt}
                 </p>
               </div>

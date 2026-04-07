@@ -33,6 +33,7 @@ export function useActivityLog() {
     try {
       await apiFetch('/user/activities', {
         method: 'POST',
+        silent: true, // falha silenciosamente — nunca dispara refresh nem throw
         body: JSON.stringify({
           activity_type: activityType,
           title,
@@ -40,9 +41,8 @@ export function useActivityLog() {
           metadata
         })
       });
-    } catch (error) {
-      console.error('Erro ao registrar atividade:', error);
-      // Não falha a operação principal se o log falhar
+    } catch {
+      // Nunca chega aqui com silent:true, mas mantém-se por segurança
     }
   }, []);
 

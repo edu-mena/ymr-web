@@ -1,0 +1,179 @@
+1. JWT Tokens — Migrar para httpOnly Cookies
+
+  Problema: Tokens no localStorage são lidos por qualquer JavaScript na página. 
+  Solução — Backend deve mudar o fluxo de auth:
+
+  ┌─────────────────────────────────────────────────────┐
+  │ ATUAL (inseguro)                                     │
+  │                                                      │
+  │ POST /auth/login  →  { access_token: "eyJ..." }      │
+  │ Frontend salva em localStorage                        │
+  │ Frontend envia: Authorization: Bearer <token>         │
+  └─────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────┐
+  │ CORRETO (seguro)                                     │
+  │                                                      │
+  │ POST /auth/login  →  Define Cookie httpOnly,Secure    │
+  │ Frontend NAO recebe o token                           │
+  │ Cookie é enviado automaticamente pelo browser          │
+  │ Frontend NAO pode ler o token (document.cookie = "")  │
+  └─────────────────────────────────────────────────────┘
+
+  // apiFetch — não precisa mais injetar Authorization
+  // Cookies httpOnly são enviados automaticamente pelo browser
+  // MAS precisa de credentials: 'include'
+  const res = await fetch(url, {
+    ...init,
+    credentials: 'include',  // Envia cookies httpOnly
+  });
+
+  ▎ Nota: Remova também o localStorage.removeItem('ymr_access_token') do
+  logout(). O logout passa a ser POST /auth/logout que limpa o cookie no
+  backend.
+
+  ---
+2. CSRF Protection
+
+  Problema: Como cookies são enviados automaticamente, um site malicioso pode
+  fazer requests autenticados no nome do usuário.
+
+  Solução — Double Submit Cookie Pattern:
+
+  // Backend — Ao criar a sessão, gera também um CSRF token
+  // Logout — limpa AMBOS os cookies
+
+  ▎ Alternativa mais simples: Se o backend usar sameSite: 'strict' nos cookies,
+  CSRF já é mitigado (o cookie não é enviado cross-site). Mas o middleware de
+  validação é a defesa em profundidade.
+
+  ---
+3. Sanitização de HTML (Stored XSS)
+
+  Problema: O backend aceita HTML de admins e devolve sem limpar. Se a conta de
+  admin for comprometida, o atacante injeta <script> em posts/produtos.
+
+  Solução — Sanitizar no BACKEND antes de salvar (e no frontend como defesa
+  extra):
+
+  // Backend — sanitizar antes de salvar no banco
+ 
+  ▎ Por quê sanitizar no backend? Porque o frontend já sanitiza com DOMPurify,
+  mas se o atacante enviar requests diretamente à API (bypass do frontend), o
+  HTML malicioso seria salvo no banco. Sanitizar em AMBOS os lados = defesa em
+  profundidade.
+
+  ---
+ 4. Rate Limiting no Login
+
+  Problema: Sem limite de tentativas → brute force possível.
+
+  Com bloqueio por conta (após login falhar N vezes):
+
+  // No controller de login
+  
+  ---
+5. Política de Passwords
+
+  Problema: 6 caracteres é insuficiente. A validação é só no frontend.
+
+  // Backend — validar no registro e na troca de senha
+  function validatePassword(password: string): string | null {
+    if (password.length < 8)
+      return 'Password must be at least 8 characters.';
+    if (password.length > 128)
+      return 'Password must be less than 128 characters.';
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password))
+      return 'Password must contain uppercase and lowercase letters.';
+    if (!/[0-9]/.test(password))
+      return 'Password must contain at least one number.';
+    return null;
+  }
+
+  // Opcional: verificar contra senhas vazadas (Have I Been Pwned)
+
+
+  ---
+6. Token Refresh (Refresh Token Rotation)
+
+  Problema: Access token expira em 15 min e o usuário é desconectado sem
+  refresh.
+
+  Fluxo correto:
+
+  ┌──────────────────────────────────────────────────────────┐
+  │ 1. LOGIN                                                 │
+  │    Backend gera:                                          │
+  │    - Access Token  (expires: 15min)  → Cookie httpOnly     │
+  │    - Refresh Token (expires: 7 dias) → Cookie httpOnly     │
+  │                                                          │
+  │ 2. REQUEST NORMAL (dentro de 15min)                       │
+  │    Frontend faz request → cookie enviado automaticamente   │
+  │    Backend valida access token → OK                       │
+  │                                                          │
+  │ 3. ACCESS TOKEN EXPIRADO (após 15min)                     │
+  │    Frontend recebe 401 → automaticamente chama /refresh    │
+  │    Backend valida refresh token → gera NOVO par           │
+  │    → Novo Access Token (15 min) + Novo Refresh Token (7d) │
+  │                                                          │
+  │ 4. REFRESH TOKEN USADO (one-time rotation)                │
+  │    Cada refresh invalida o token anterior                  │
+  │    Se alguém tentar usar o token antigo → DETECTAR ROUBO  │
+  └──────────────────────────────────────────────────────────┘
+
+  // Login — gera ambos os tokens
+  
+  No frontend, o interceptor de 401:
+
+  // api.ts — intercepta 401 e tenta refresh automático
+
+
+  ---
+7. Mensagens de Erro Genéricas
+
+  Problema: O backend devolve stack traces ou detalhes internos nos erros.
+
+  // Middleware de erro global — SEMPRE o último no Express
+  
+  ---
+ 8. Session ID em URL Params
+
+  Problema: session_id aparece em ?user_id=123&session_id=uuid — logs,
+  histórico, referer.
+
+  // CORRETO — session_id no body, não na URL
+  
+
+  ---
+  Resumo Visual — O Que Cada Lado Deve Fazer:
+
+  ┌────────────────── BACKEND ──────────────────┐
+  │                                             │
+  │  1. httpOnly cookies     → tokens invisíveis │
+  │  2. CSRF middleware      → proteção CSRF     │
+  │  3. DOMPurify no save    → previne stored XSS│
+  │  4. Rate limiter         → previne brute force│
+  │  5. Password validator   → mínimo 8 chars    │
+  │  6. Refresh token rotation → sessão contínua │
+  │  7. Error handler genérico → sem leak de info │
+  │  8. Session no body/cookie → não em URL      │
+  │  9. bcrypt custo >= 12   → hashing forte     │
+  │ 10. HTTPS enforced       → TLS obrigatório    │
+  └─────────────────────────────────────────────┘
+
+  ┌────────────────── FRONTEND (já corrigido) ──┐
+  │                                              │
+  │  1. DOMPurify.sanitize()  ✅ feito           │
+  │  2. RequireAuth com redirect ✅ feito        │
+  │  3. Password mínimo 8 chars  ✅ feito        │
+  │  4. noopener noreferrer    ✅ feito          │
+  │  5. Security headers       ✅ feito          │
+  │  6. Removido apiBaseUrl localStorage ✅      │
+  │  7. Removida chave duplicata ✅              │
+  │                                              │
+  │  A FAZER (depende do backend):               │
+  │  8. credentials: 'include' no fetch          │
+  │  9. Remover authToken do localStorage        │
+  │ 10. CSRF header em mutations                 │
+  │ 11. Auto-refresh on 401                      │
+  └─────────────────────────────────────────────┘

@@ -111,13 +111,15 @@ const CompanyProfile = () => {
                   Download PDF
                 </button>
 
-                <button
-                  onClick={() => modal.openModal('profile')}
-                  className="border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
+                <a
+                  href={PROFILE_VERSIONS[0].file}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 no-underline"
                 >
                   <Eye className="h-5 w-5" />
                   Preview Online
-                </button>
+                </a>
               </div>
             </div>
 
@@ -210,24 +212,37 @@ const CompanyProfile = () => {
             {/* Language download cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               {PROFILE_VERSIONS.map((v) => (
-                <button
+                <div
                   key={v.id}
-                  onClick={() => downloadProfile(v.id)}
-                  className="group flex flex-col items-start gap-2 border-2 border-gray-100 hover:border-blue-500 bg-gray-50 hover:bg-blue-50 rounded-xl p-4 text-left transition-all duration-200"
+                  className="flex flex-col items-start gap-2 border-2 border-gray-100 bg-gray-50 rounded-xl p-4 text-left transition-all duration-200 focus-within:border-blue-500"
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-2xl leading-none">{v.flag}</span>
-                    <span className="font-semibold text-gray-900 group-hover:text-blue-700">{v.label}</span>
+                    <span className="font-semibold text-gray-900">{v.label}</span>
                   </div>
                   <div className="text-xs text-gray-500 space-y-0.5">
                     <div>{v.size} · {v.pages}</div>
                     <div>Updated {v.updated}</div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-blue-600 text-xs font-semibold mt-1 group-hover:gap-2 transition-all">
-                    <Download className="h-3.5 w-3.5" />
-                    Download PDF
+                  <div className="flex items-center gap-2 mt-1">
+                    <button
+                      onClick={() => downloadProfile(v.id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 text-blue-600 text-xs font-semibold hover:text-blue-800 transition-colors"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Baixar
+                    </button>
+                    <a
+                      href={v.file}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1.5 text-gray-600 text-xs font-semibold hover:text-gray-800 transition-colors no-underline"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      Ver
+                    </a>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
 

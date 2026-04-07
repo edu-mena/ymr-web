@@ -6,7 +6,7 @@ interface AsideGifProps {
 
 export default function AsideGif({ img, title }: AsideGifProps) {
   return (
-    <div className="bg-gray-700 dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
+    <div className="bg-gray-700 rounded-xl shadow-xl overflow-hidden">
       <div className="relative w-full">
         <img 
           src={img} 

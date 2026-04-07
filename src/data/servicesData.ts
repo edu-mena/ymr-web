@@ -35,140 +35,140 @@ export interface ServiceStat {
   label: string;
 }
 
-// ===== DADOS DOS SERVIÇOS LOCAIS =====
+// ===== LOCAL SERVICES DATA =====
 export const localServices: LocalService[] = [
   {
     icon: Database,
-    title: 'Tanques de Armazenamento de Óleos Pesados',
-    description: 'Aluguer de tanques especializados para armazenamento seguro de óleos pesados com diferentes capacidades e sistemas de monitoramento avançados.',
-    features: ['Capacidades de 50m³ a 500m³', 'Sistemas de segurança integrados', 'Monitoramento 24/7', 'Manutenção preventiva incluída', 'Certificação internacional'],
+    title: 'Heavy Oil Storage Tanks',
+    description: 'Rental of specialized tanks for safe storage of heavy oils with different capacities and advanced monitoring systems.',
+    features: ['Capacities from 50m³ to 500m³', 'Integrated safety systems', '24/7 monitoring', 'Preventive maintenance included', 'International certification'],
     image: 'https://images.pexels.com/photos/2219024/pexels-photo-2219024.jpeg?auto=compress&cs=tinysrgb&w=800',
     backgroundImage: 'https://ymrindustrial.com/assets/produtos/us.jpg',
-    specs: 'Ideal para refinarias, petroquímicas e distribuidoras',
-    price: 'A partir de Kz 150,000/mês',
-    duration: 'Contratos de 6-24 meses',
-    availability: 'Disponível imediatamente'
+    specs: 'Ideal for refineries, petrochemical and distribution companies',
+    price: 'From Kz 150,000/month',
+    duration: '6-24 month contracts',
+    availability: 'Available immediately'
   },
   {
     icon: Zap,
-    title: 'Geradores Industriais Pesados',
-    description: 'Aluguer de geradores industriais de alta potência (100kW a 2000kW) para garantir energia contínua e confiável em seus projetos mais exigentes.',
-    features: ['Potência de 100kW a 2000kW', 'Consumo otimizado de combustível', 'Operação silenciosa', 'Suporte técnico 24/7', 'Instalação e configuração incluídas'],
+    title: 'Heavy Industrial Generators',
+    description: 'Rental of high-power industrial generators (100kW to 2000kW) to ensure continuous and reliable power for your most demanding projects.',
+    features: ['100kW to 2000kW power output', 'Optimized fuel consumption', 'Quiet operation', '24/7 technical support', 'Installation and configuration included'],
     image: 'https://images.pexels.com/photos/2219024/pexels-photo-2219024.jpeg?auto=compress&cs=tinysrgb&w=800',
     backgroundImage: 'https://ymrindustrial.com/assets/produtos/gerador.jpg',
-    specs: 'Perfeito para construção, mineração e eventos industriais',
-    price: 'A partir de Kz 200,000/mês',
-    duration: 'Contratos flexíveis',
-    availability: 'Estoque disponível'
+    specs: 'Perfect for construction, mining and industrial events',
+    price: 'From Kz 200,000/month',
+    duration: 'Flexible contracts',
+    availability: 'Stock available'
   },
   {
     icon: Wrench,
-    title: 'Compressores Industriais Pesados',
-    description: 'Equipamentos de compressão industrial de última geração para aplicações em projetos de grande escala, com tecnologia avançada e eficiência superior.',
-    features: ['Pressão até 350 bar', 'Tecnologia de ponta alemã', 'Baixíssima manutenção', 'Eficiência energética superior', 'Controle remoto disponível'],
+    title: 'Heavy Industrial Compressors',
+    description: 'State-of-the-art industrial compression equipment for large-scale project applications, with advanced technology and superior efficiency.',
+    features: ['Pressure up to 350 bar', 'Cutting-edge German technology', 'Ultra-low maintenance', 'Superior energy efficiency', 'Remote control available'],
     image: 'https://images.pexels.com/photos/2219024/pexels-photo-2219024.jpeg?auto=compress&cs=tinysrgb&w=800',
     backgroundImage: 'https://ymrindustrial.com/assets/produtos/elgi.jpg',
-    specs: 'Essencial para petróleo, gás e indústria química',
-    price: 'Sob consulta',
-    duration: 'Projetos de 3-18 meses',
-    availability: 'Agendamento necessário'
+    specs: 'Essential for oil, gas and chemical industries',
+    price: 'Upon request',
+    duration: '3-18 month projects',
+    availability: 'Scheduling required'
   }
 ];
 
-// ===== DADOS DETALHADOS DA ABOUD CONSULTORIA =====
+// ===== ABOUD CONSULTING DETAILED SERVICES =====
 export const aboudServices: AboudService[] = [
   {
     icon: Briefcase,
-    title: 'Representações Comerciais',
-    description: 'Representação exclusiva de marcas internacionais líderes em tecnologia para a indústria de petróleo e gás.',
+    title: 'Commercial Representations',
+    description: 'Exclusive representation of leading international technology brands for the oil and gas industry.',
     image: 'https://mobilit.com.br/wp-content/uploads/2021/11/executivos-c-level.jpg',
     services: [
-      'Completação e estimulação de poços',
-      'Acessórios de revestimento de alta qualidade',
-      'Análise e otimização de perfuração',
-      'Sensores de fundo de poço',
-      'Sistemas de elevação artificial (ESP, BCS)',
-      'Equipamentos de pescaria especializados',
-      'Medidores de vazão multifásicos',
-      'Bombas de jateamento de fundo'
+      'Well completion and stimulation',
+      'High-quality casing accessories',
+      'Drilling analysis and optimization',
+      'Downhole sensors',
+      'Artificial lift systems (ESP, BCS)',
+      'Specialized fishing equipment',
+      'Multiphase flow meters',
+      'Jet-pump systems'
     ],
     brands: ['Fishbones', 'Vulcan', 'Adaga', 'BBM', 'ABBON', 'Novomet'],
     benefits: [
-      'Acesso a tecnologia de ponta internacional',
-      'Suporte técnico especializado',
-      'Preços competitivos no mercado',
-      'Garantia de qualidade certificada',
-      'Entrega rápida e confiável',
-      'Treinamento técnico incluído'
+      'Access to cutting-edge international technology',
+      'Specialized technical support',
+      'Competitive market pricing',
+      'Certified quality guarantee',
+      'Fast and reliable delivery',
+      'Technical training included'
     ],
-    targetAudience: 'Operadoras de petróleo e gás, empresas de serviços',
-    duration: 'Contratos de longo prazo',
+    targetAudience: 'Oil and gas operators, service companies',
+    duration: 'Long-term contracts',
     certification: 'ISO 9001, API, DNV'
   },
   {
     icon: Cog,
-    title: 'Engenharia de Poço',
-    description: 'Soluções completas em engenharia de poços com profissionais PhD e décadas de experiência internacional.',
+    title: 'Well Engineering',
+    description: 'Complete well engineering solutions with PhD professionals and decades of international experience.',
     image: 'https://hidrocon.com/wp-content/uploads/2023/06/11122018_Hidrocon_%C2%A9tarsofigueira_0166-1.jpg',
     services: [
-      'Perfuração direcional e horizontal',
-      'Dimensionamento de colunas de perfuração',
-      'Análise de estabilidade de poço',
-      'Controle e contenção de areia',
-      'Estimulação e fraturamento',
-      'Cimentação especializada',
-      'Intervenção em poços',
-      'Garantia de escoamento'
+      'Directional and horizontal drilling',
+      'Drilling string sizing',
+      'Well stability analysis',
+      'Sand control and containment',
+      'Stimulation and fracturing',
+      'Specialized cementing',
+      'Well intervention',
+      'Flow assurance'
     ],
-    specialties: ['Perfuração Offshore', 'Poços Multilaterais', 'Análise Geomecânica'],
+    specialties: ['Offshore Drilling', 'Multilateral Wells', 'Geomechanical Analysis'],
     benefits: [
-      'Equipe com PhD em Engenharia de Petróleo',
-      'Experiência internacional comprovada',
-      'Software de simulação avançado',
-      'Relatórios técnicos detalhados',
-      'Acompanhamento durante execução',
-      'Consultoria pós-projeto'
+      'Team with PhD in Petroleum Engineering',
+      'Proven international experience',
+      'Advanced simulation software',
+      'Detailed technical reports',
+      'Support during execution',
+      'Post-project consulting'
     ],
-    targetAudience: 'Operadoras, empresas de E&P, consultorias',
-    duration: 'Projetos de 3-12 meses',
+    targetAudience: 'Operators, E&P companies, consultancies',
+    duration: '3-12 month projects',
     certification: 'SPE, IADC, API'
   },
   {
     icon: GraduationCap,
-    title: 'Treinamento Técnico e Operacional',
-    description: 'Programas de capacitação técnica desenvolvidos por especialistas com experiência internacional comprovada.',
+    title: 'Technical and Operational Training',
+    description: 'Technical capacity building programs developed by specialists with proven international experience.',
     image: 'https://img.freepik.com/fotos-gratis/equipa-de-engenharia-profissional-que-utiliza-software-da-industria-40-numa-fabrica-inteligente_482257-126300.jpg?semt=ais_hybrid&w=740&q=80',
     services: [
-      'Perfuração direcional avançada',
-      'Operações offshore complexas',
-      'Cimentação especializada',
-      'Intervenção e workover',
-      'Segurança operacional',
-      'Análise de dados de perfuração',
-      'Geomecânica aplicada',
-      'Estimulação de reservatórios'
+      'Advanced directional drilling',
+      'Complex offshore operations',
+      'Specialized cementing',
+      'Intervention and workover',
+      'Operational safety',
+      'Drilling data analysis',
+      'Applied geomechanics',
+      'Reservoir stimulation'
     ],
-    certifications: ['Certificação Internacional', 'Módulos Personalizados', 'Treinamento In-Company'],
+    certifications: ['International Certification', 'Customized Modules', 'In-Company Training'],
     benefits: [
-      'Instrutores com experiência internacional',
-      'Material didático atualizado',
-      'Simulações práticas',
-      'Certificação reconhecida',
-      'Acompanhamento pós-treinamento',
-      'Cursos customizados'
+      'Instructors with international experience',
+      'Updated educational materials',
+      'Practical simulations',
+      'Recognized certification',
+      'Post-training support',
+      'Customized courses'
     ],
-    targetAudience: 'Engenheiros, técnicos, gestores de E&P',
-    duration: 'Cursos de 1-5 dias',
-    certification: 'IADC, SPE, Certificação própria'
+    targetAudience: 'Engineers, technicians, E&P managers',
+    duration: '1-5 day courses',
+    certification: 'IADC, SPE, Proprietary certification'
   }
 ];
 
-// ===== ESTATÍSTICAS DA ABOUD =====
+// ===== ABOUD STATISTICS =====
 export const aboudStats: ServiceStat[] = [
-  { number: '25+', label: 'Anos de Experiência' },
-  { number: '10+', label: 'Marcas Representadas' },
-  { number: '200+', label: 'Projetos Executados' },
-  { number: '50+', label: 'Profissionais Treinados' }
+  { number: '25+', label: 'Years of Experience' },
+  { number: '10+', label: 'Represented Brands' },
+  { number: '200+', label: 'Projects Completed' },
+  { number: '50+', label: 'Trained Professionals' }
 ];
 
 // ===== FUNÇÕES UTILITÁRIAS =====

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { apiLogout } from '../services/api';
 
 type AuthUser = {
   id?: string;
@@ -10,53 +11,40 @@ type AuthUser = {
 type AuthContextValue = {
   isAuthenticated: boolean;
   user: AuthUser | null;
-  accessToken: string | null;
-  login: (user: AuthUser, token: string) => void;
+  login: (user: AuthUser) => void;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// Função para verificar se o token JWT está expirado
-function isTokenExpired(token: string): boolean {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.exp * 1000 < Date.now();
-  } catch {
-    return true; // Token inválido = expirado
-  }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     try {
       const savedUser = localStorage.getItem('ymr_auth_user');
-      const savedToken = localStorage.getItem('ymr_access_token');
-      
-      if (savedUser && savedToken && !isTokenExpired(savedToken)) {
+      if (savedUser) {
         setUser(JSON.parse(savedUser));
-        setAccessToken(savedToken);
-      } else {
-        // Token expirado ou ausente → limpar tudo
-        logout();
       }
-    } catch (error) {
-      console.error('Erro ao carregar dados de autenticação:', error);
-      logout();
+    } catch {
+      localStorage.removeItem('ymr_auth_user');
     }
+
+    // Escuta evento de expiração de sessão disparado por apiFetch/apiLogout
+    const onExpired = () => {
+      setUser(null);
+      localStorage.removeItem('ymr_auth_user');
+    };
+    window.addEventListener('ymr:session-expired', onExpired);
+    return () => window.removeEventListener('ymr:session-expired', onExpired);
   }, []);
 
-  function login(nextUser: AuthUser, token: string) {
+  function login(nextUser: AuthUser) {
     setUser(nextUser);
-    setAccessToken(token);
     try {
       localStorage.setItem('ymr_auth_user', JSON.stringify(nextUser));
-      localStorage.setItem('ymr_access_token', token);
-    } catch (error) {
-      console.error('Erro ao salvar dados de autenticação:', error);
+    } catch {
+      // silencioso
     }
   }
 
@@ -64,20 +52,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     try {
       localStorage.removeItem('ymr_auth_user');
-      localStorage.removeItem('ymr_access_token');
-      localStorage.removeItem('cart_session'); // ← ADICIONE ISTO!
-    } catch (error) {
-      console.error('Erro ao limpar dados:', error);
+      localStorage.removeItem('cart_session');
+    } catch {
+      // silencioso
     }
+    apiLogout();
   }
 
   const value = useMemo<AuthContextValue>(() => ({
-    isAuthenticated: !!user && !!accessToken && !isTokenExpired(accessToken),
+    isAuthenticated: !!user,
     user,
-    accessToken,
     login,
     logout,
-  }), [user, accessToken]);
+  }), [user]);
 
   return (
     <AuthContext.Provider value={value}>

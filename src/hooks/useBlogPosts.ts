@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../services/api';
-import { type BlogPost } from '../data/blogPosts'; // mantém o tipo existente
+
+interface BlogPost {
+  id: string;
+  title: string;
+  excerpt: string;
+  image: string;
+  category: string;
+  date: string;
+  featured?: boolean;
+}
 
 export function useBlogPosts() {
   const [posts, setPosts]     = useState<BlogPost[]>([]);

@@ -13,7 +13,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, image, category, to
   return (
     <Link
       to={to || (id ? `/product/${id}` : '#')}
-      className="block w-full bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-200 group"
+      className="block w-full bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-200 group"
     >
       <div className="relative bg-gray-100 w-full aspect-[4/3] sm:aspect-square">
         <img 
@@ -29,7 +29,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, image, category, to
       </div>
 
       <div className="p-2 bg-[#e6e6e6]">
-        <h3 className="text-sm sm:text-base md:text-lg py-2 md:py-3 font-semibold text-gray-900 dark:text-white text-left group-hover:text-red-600 transition-colors leading-tight truncate">
+        <h3 className="text-sm sm:text-base md:text-lg py-2 md:py-3 font-semibold text-gray-900 text-left group-hover:text-red-600 transition-colors leading-tight truncate">
           {name}
         </h3>
       </div>

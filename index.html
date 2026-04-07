@@ -1,14 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/src/assets/logo/ymrlogo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
     <title>YMR Industrial - Empowering Industrial Progress</title>
     <meta name="description" content="Your trusted partner in industrial tools, equipment, and solutions. Quality products for construction, maintenance, and industrial applications in Angola." />
+      <script>
+      // Google Translate initialization - hidden, driven by custom language selector
+      function googleTranslateElementInit() {
+        if (sessionStorage.getItem('googtrans_disabled') === 'true') return;
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'pt,en',
+          autoDisplay: false,
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+        }, 'google_translate_element');
+      }
+    </script>
+    <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
   </head>
   <body>
     <div id="root"></div>
+    <div id="google_translate_element" style="display:none;"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -4,6 +4,17 @@
 @tailwind components;
 @tailwind utilities;
 
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+
 :root {
   --color-primary: hsl(359, 96%, 44%);
   --color-secondary: hsl(220, 60%, 40%);
@@ -43,6 +54,14 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+body > .skiptranslate,
+.goog-te-banner-frame {
+  display: none !important;
+}
+body {
+  top: 0 !important;
 }
 
 /* Animations */
@@ -166,4 +185,19 @@ body {
   .page-content {
     padding-top: 64px; /* Apenas a segunda navbar no mobile (aprox. 56px + espaçamento) */
   }
+}
+
+@keyframes sadcFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-3px); }
+}
+
+@keyframes sadcGlow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0)); }
+  50%       { filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.35)); }
+}
+
+@keyframes sadcSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }

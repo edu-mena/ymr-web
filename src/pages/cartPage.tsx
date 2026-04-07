@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { useActivityLog } from '../hooks/useActivityLog';
 import { apiFetch } from '../services/api';
 
-// ===== TIPOS =====
+// ===== TYPES =====
 type Rfq = {
   id: string;
   name: string;
@@ -36,7 +36,7 @@ type ToastNotification = {
   action?: { label: string; onClick: () => void };
 };
 
-// ===== TIPOS: RFQ RESPONSE =====
+// ===== TYPES: RFQ RESPONSE =====
 type RfqResponse = {
   rfq_id: string;
   rfq_name: string;
@@ -46,7 +46,7 @@ type RfqResponse = {
   attachments?: Array<{ filename: string; file_path: string; file_size?: number }>;
 };
 
-// ===== COMPONENTE TOAST =====
+// ===== TOAST COMPONENT =====
 function Toast({ notification, onClose }: { notification: ToastNotification; onClose: () => void }) {
   const [progress, setProgress] = useState(100);
 
@@ -108,9 +108,9 @@ function Toast({ notification, onClose }: { notification: ToastNotification; onC
   );
 }
 
-// ===== BANNER: RFQ RESPONDIDA =====
-// Aparece no topo da CartPage quando existe uma RFQ com status 'completed'
-// e que tenha mensagens admin não lidas.
+// ===== BANNER: RFQ RESPONDED =====
+// Appears at the top of CartPage when there's an RFQ with status 'completed'
+// with unread admin messages.
 function RfqResponseBanner({
   responses,
   onDismiss,
@@ -131,16 +131,16 @@ function RfqResponseBanner({
         <div className="flex-1">
           <p className="font-semibold text-indigo-900 text-sm">
             {responses.length === 1
-              ? 'O seu pedido de cotação foi respondido!'
-              : `${responses.length} pedidos de cotação foram respondidos!`}
+              ? 'Your quote request has been answered!'
+              : `${responses.length} quote requests have been answered!`}
           </p>
-          <p className="text-xs text-indigo-600">Verifique as mensagens e os PDFs de cotação.</p>
+          <p className="text-xs text-indigo-600">Check messages and quote PDFs.</p>
         </div>
         <button
           onClick={onViewMessages}
           className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors font-medium"
         >
-          Ver Mensagens
+          View Messages
         </button>
       </div>
 
@@ -157,7 +157,7 @@ function RfqResponseBanner({
             </div>
             <p className="text-xs text-gray-600 line-clamp-2 mb-2">{r.message}</p>
 
-            {/* Anexos (PDFs) */}
+            {/* Attachments (PDFs) */}
             {r.attachments && r.attachments.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {r.attachments.map((att, idx) => (
@@ -178,7 +178,7 @@ function RfqResponseBanner({
           <button
             onClick={() => onDismiss(r.rfq_id)}
             className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-            title="Dispensar"
+            title="Dismiss"
           >
             <X className="h-4 w-4" />
           </button>
@@ -192,12 +192,12 @@ function RfqResponseBanner({
 function formatRelativeDate(dateStr: string) {
   const date = new Date(dateStr);
   const diff = Date.now() - date.getTime();
-  if (diff < 3_600_000) return `há ${Math.floor(diff / 60_000)} min`;
-  if (diff < 86_400_000) return `há ${Math.floor(diff / 3_600_000)}h`;
-  return date.toLocaleDateString('pt-AO', { day: '2-digit', month: 'short' });
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
 }
 
-// ===== COMPONENTE PRINCIPAL =====
+// ===== MAIN COMPONENT =====
 const CartPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -220,20 +220,20 @@ const CartPage: React.FC = () => {
   const [toast, setToast] = useState<ToastNotification | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // ── Novas respostas de RFQ (status = completed com mensagens admin não lidas)
+  // ── New RFQ responses (status = completed with unread admin messages)
   const [rfqResponses, setRfqResponses] = useState<RfqResponse[]>([]);
-  // IDs de banners já dispensados nesta sessão
+  // IDs of dismissed banners this session
   const [dismissedBanners, setDismissedBanners] = useState<string[]>(() => {
     try { return JSON.parse(sessionStorage.getItem('dismissed_rfq_banners') || '[]'); }
     catch { return []; }
   });
 
-  // Sincroniza rfqList local com o contexto
+  // Sync local rfqList with context
   useEffect(() => {
     setRfqList(contextRfqList as Rfq[]);
   }, [contextRfqList]);
 
-  // Detectar mobile
+  // Detect mobile
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
@@ -241,50 +241,50 @@ const CartPage: React.FC = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // ── Carregar notificações de RFQs respondidas (completed) ──
+  // ── Load responded RFQ notifications (completed) ──
   useEffect(() => {
     const loadRfqResponses = async () => {
       if (!user?.id) return;
       try {
-        // Endpoint retorna array de mensagens admin não lidas
-        // em RFQs com status 'completed'
+        // Endpoint returns array of unread admin messages
+        // in RFQs with status 'completed'
         const res = await apiFetch('/rfqs/responses/unread');
         const data: RfqResponse[] = res.data || [];
 
-        // Filtra banners já dispensados nesta sessão
+        // Filter out already dismissed banners this session
         const visible = data.filter(r => !dismissedBanners.includes(r.rfq_id));
         setRfqResponses(visible);
 
-        // Mostra toast para a primeira resposta nova, se existir
+        // Shows toast for first new response if exists
         if (visible.length > 0 && visible.some(r => r.attachments && r.attachments.length > 0)) {
           showTemporaryNotification(
             'info',
-            '📄 Cotação disponível!',
-            `O PDF da sua cotação "${visible[0].rfq_name}" já está disponível.`,
-            { label: 'Ver nas Mensagens', onClick: () => navigate('/userprofile?tab=messages') },
+            '📄 Quote available!',
+            `The PDF for your quote "${visible[0].rfq_name}" is now available.`,
+            { label: 'View in Messages', onClick: () => navigate('/userprofile?tab=messages') },
             10_000
           );
         } else if (visible.length > 0) {
           showTemporaryNotification(
             'info',
-            '💬 RFQ Respondida',
-            `"${visible[0].rfq_name}" recebeu uma resposta. Verifique as mensagens.`,
-            { label: 'Ver nas Mensagens', onClick: () => navigate('/userprofile?tab=messages') },
+            '💬 RFQ Answered',
+            `"${visible[0].rfq_name}" received a response. Check your messages.`,
+            { label: 'View in Messages', onClick: () => navigate('/userprofile?tab=messages') },
             8_000
           );
         }
       } catch {
-        // Silencioso — não é crítico
+        // Silent — not critical
       }
     };
     loadRfqResponses();
-    // Verificar a cada 2 minutos
+    // Check every 2 minutes
     const interval = setInterval(loadRfqResponses, 120_000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  // ===== NOTIFICAÇÃO =====
+  // ===== NOTIFICATION =====
   const showTemporaryNotification = useCallback((
     type: ToastNotification['type'],
     title: string,
@@ -302,7 +302,7 @@ const CartPage: React.FC = () => {
     setRfqResponses(prev => prev.filter(r => r.rfq_id !== rfqId));
   }, [dismissedBanners]);
 
-  // ===== SELEÇÃO =====
+  // ===== SELECTION =====
   const toggleItemSelection = useCallback((itemId: string) => {
     setSelectedItems(prev =>
       prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
@@ -315,122 +315,122 @@ const CartPage: React.FC = () => {
 
   const clearSelection = useCallback(() => setSelectedItems([]), []);
 
-  // ===== CRIAR RFQ =====
+  // ===== CREATE RFQ =====
   const handleCreateRfq = useCallback(async (rfqName: string) => {
     if (!rfqName.trim() || selectedItems.length === 0) return;
     try {
       const result = await createRfq(rfqName, selectedItems);
       setSelectedItems([]);
       setShowRfqModal(false);
-      showTemporaryNotification('success', 'RFQ criada', `${selectedItems.length} itens adicionados à RFQ "${result.name}"`);
+      showTemporaryNotification('success', 'RFQ Created', `${selectedItems.length} items added to RFQ "${result.name}"`);
       await logActivity({
         activityType: 'rfq_created',
-        title: 'RFQ criada',
-        description: `RFQ "${rfqName}" criada com ${selectedItems.length} itens`,
+        title: 'RFQ Created',
+        description: `RFQ "${rfqName}" created with ${selectedItems.length} items`,
         metadata: { rfqName, rfqId: result.rfq_id, itemCount: selectedItems.length }
       });
     } catch (e: any) {
-      showTemporaryNotification('error', 'Erro', e.message || 'Não foi possível criar a RFQ');
+      showTemporaryNotification('error', 'Error', e.message || 'Could not create RFQ');
     }
   }, [selectedItems, createRfq, showTemporaryNotification, logActivity]);
 
-  // ===== ADICIONAR A RFQ EXISTENTE =====
+  // ===== ADD TO EXISTING RFQ =====
   const handleAddToExistingRfq = useCallback(async (rfqId: string) => {
     if (selectedItems.length === 0) return;
     try {
       await addToRfq(selectedItems, rfqId);
       setSelectedItems([]);
       setShowRfqModal(false);
-      showTemporaryNotification('success', 'Itens adicionados', `${selectedItems.length} itens adicionados à RFQ`);
+      showTemporaryNotification('success', 'Items Added', `${selectedItems.length} items added to RFQ`);
       await logActivity({
         activityType: 'rfq_updated',
-        title: 'Itens adicionados à RFQ',
-        description: `${selectedItems.length} itens adicionados a uma RFQ existente`,
+        title: 'Items added to RFQ',
+        description: `${selectedItems.length} items added to an existing RFQ`,
         metadata: { rfqId, itemCount: selectedItems.length }
       });
     } catch (e: any) {
-      showTemporaryNotification('error', 'Erro', e.message || 'Não foi possível adicionar à RFQ');
+      showTemporaryNotification('error', 'Error', e.message || 'Could not add to RFQ');
     }
   }, [selectedItems, addToRfq, showTemporaryNotification, logActivity]);
 
-  // ===== SUBMETER RFQ =====
+  // ===== SUBMIT RFQ =====
   const handleSubmitRfq = useCallback(async (rfqId: string) => {
     if (!user?.id) return;
     try {
-      // 1. Submete RFQ
+      // 1. Submit RFQ
       await apiFetch(`/rfqs/${rfqId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
 
-      // 2. Notificação automática ao utilizador (e-mail)
+      // 2. Automatic notification to user (email)
       await apiFetch(`/rfqs/${rfqId}/notify-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       }).catch(() => {
-        console.warn('Falha ao enviar notificação ao usuário');
+        console.warn('Failed to send notification to user');
       });
 
-      // Actualiza estado local
+      // Update local state
       setRfqList(prev => prev.map(rfq =>
         rfq.id === rfqId ? { ...rfq, status: 'submitted' } : rfq
       ));
 
-      // Sincroniza com o contexto
+      // Sync with context
       await loadRfqs();
 
       const rfq = rfqList.find(r => r.id === rfqId);
       await logActivity({
         activityType: 'rfq_submitted',
-        title: 'Pedido de cotação enviado',
-        description: `RFQ "${rfq?.name}" submetida para análise comercial`,
+        title: 'Quote request sent',
+        description: `RFQ "${rfq?.name}" submitted for commercial review`,
         metadata: { rfqId, rfqName: rfq?.name }
       });
 
       showTemporaryNotification(
         'success',
-        'Pedido enviado!',
-        'Recebemos o seu pedido. Verifique as mensagens do perfil para atualizações.',
-        { label: 'Ver mensagens', onClick: () => navigate('/userprofile?tab=messages') },
+        'Request sent!',
+        'We received your request. Check your profile messages for updates.',
+        { label: 'View messages', onClick: () => navigate('/userprofile?tab=messages') },
         8000
       );
     } catch (e: any) {
-      showTemporaryNotification('error', 'Erro ao enviar', e.message || 'Tente novamente mais tarde');
+      showTemporaryNotification('error', 'Failed to send', e.message || 'Try again later');
     }
   }, [user?.id, rfqList, navigate, loadRfqs, showTemporaryNotification, logActivity]);
 
-  // ===== REMOVER DA RFQ =====
+  // ===== REMOVE FROM RFQ =====
   const handleRemoveFromRfq = useCallback(async (itemId: string, rfqId: string) => {
     const rfq = rfqList.find(r => r.id === rfqId);
     if (rfq?.status === 'submitted') {
-      showTemporaryNotification('warning', 'Não permitido', 'Não é possível modificar RFQs já enviadas');
+      showTemporaryNotification('warning', 'Not allowed', 'Cannot modify already submitted RFQs');
       return;
     }
     try {
       await removeFromRfq(itemId);
       if (selectedProduct?.id === itemId) {
-        setSelectedProduct(prev => prev ? { ...prev, rfqId: null, status: 'Pendente' } : prev);
+        setSelectedProduct(prev => prev ? { ...prev, rfqId: null, status: 'Pending' } : prev);
       }
-      showTemporaryNotification('success', 'Item removido', 'Produto removido da RFQ com sucesso');
+      showTemporaryNotification('success', 'Item removed', 'Product removed from RFQ successfully');
     } catch (e: any) {
-      showTemporaryNotification('error', 'Erro', 'Não foi possível remover o item');
+      showTemporaryNotification('error', 'Error', 'Could not remove item');
     }
   }, [rfqList, selectedProduct, removeFromRfq, showTemporaryNotification]);
 
-  // ===== UTILITÁRIOS =====
+  // ===== UTILITIES =====
   const getStatusInfo = useCallback((status: string | null, rfqStatus?: string): StatusInfo => {
-    if (rfqStatus === 'submitted')  return { color: 'text-green-600 bg-green-100',  icon: CheckCircle, label: 'Enviado'   };
-    if (rfqStatus === 'completed')  return { color: 'text-blue-600 bg-blue-100',    icon: CheckCircle, label: 'Respondido' };
-    if (rfqStatus === 'cancelled')  return { color: 'text-red-600 bg-red-100',      icon: XCircle,     label: 'Cancelado' };
+    if (rfqStatus === 'submitted')  return { color: 'text-green-600 bg-green-100',  icon: CheckCircle, label: 'Submitted'  };
+    if (rfqStatus === 'completed')  return { color: 'text-blue-600 bg-blue-100',    icon: CheckCircle, label: 'Answered'   };
+    if (rfqStatus === 'cancelled')  return { color: 'text-red-600 bg-red-100',      icon: XCircle,     label: 'Cancelled' };
     switch (status) {
       case 'awaiting':
-      case 'Em Espera':   return { color: 'text-yellow-600 bg-yellow-100', icon: Clock,        label: 'Em Espera'  };
+      case 'Em Espera':   return { color: 'text-yellow-600 bg-yellow-100', icon: Clock,        label: 'Awaiting'   };
       case 'completed':
-      case 'Concluído':   return { color: 'text-green-600 bg-green-100',   icon: CheckCircle,  label: 'Concluído'  };
-      case 'submitted':   return { color: 'text-green-600 bg-green-100',   icon: CheckCircle,  label: 'Enviado'    };
+      case 'Concluído':   return { color: 'text-green-600 bg-green-100',   icon: CheckCircle,  label: 'Completed'  };
+      case 'submitted':   return { color: 'text-green-600 bg-green-100',   icon: CheckCircle,  label: 'Submitted'  };
       case 'cancelled':
-      case 'Cancelado':   return { color: 'text-red-600 bg-red-100',       icon: XCircle,      label: 'Cancelado'  };
-      default:            return { color: 'text-gray-600 bg-gray-100',     icon: AlertCircle,  label: 'Pendente'   };
+      case 'Cancelado':   return { color: 'text-red-600 bg-red-100',       icon: XCircle,      label: 'Cancelled'  };
+      default:            return { color: 'text-gray-600 bg-gray-100',     icon: AlertCircle,  label: 'Pending'    };
     }
   }, []);
 
@@ -458,7 +458,7 @@ const CartPage: React.FC = () => {
     else { setSelectedProduct(product); setSelectedRfqId(null); }
   }, [isMobile]);
 
-  // Agrupar por RFQ
+  // Group by RFQ
   const groupedItems = cartItems.reduce<Record<string, CartProduct[]>>((groups, item) => {
     const key = item.rfqId || 'unassigned';
     if (!groups[key]) groups[key] = [];
@@ -477,7 +477,7 @@ const CartPage: React.FC = () => {
       <div className="min-h-screen page-content bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Carregando carrinho...</p>
+          <p className="mt-4 text-gray-600">Loading cart...</p>
         </div>
       </div>
     );
@@ -490,7 +490,7 @@ const CartPage: React.FC = () => {
           <AlertCircle className="h-8 w-8 text-red-600 mx-auto mb-3" />
           <p className="text-red-700 font-medium">{error}</p>
           <button onClick={() => reloadCart()} className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
-            Tentar Novamente
+            Try Again
           </button>
         </div>
       </div>
@@ -507,33 +507,33 @@ const CartPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-4 mb-4">
             <div className="flex items-center gap-2 text-sm">
               <Package className="h-4 w-4 text-gray-500" />
-              <span className="font-medium text-gray-700">{cartItems.length} produtos</span>
+              <span className="font-medium text-gray-700">{cartItems.length} products</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Clock className="h-4 w-4 text-yellow-500" />
               <span className="text-gray-600">
-                <span className="font-medium text-yellow-700">{pendingOrdersCount}</span> Em Análise
+                <span className="font-medium text-yellow-700">{pendingOrdersCount}</span> Under Review
               </span>
             </div>
             {completedCount > 0 && (
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle className="h-4 w-4 text-blue-500" />
                 <span className="text-gray-600">
-                  <span className="font-medium text-blue-700">{completedCount}</span> Respondidas
+                  <span className="font-medium text-blue-700">{completedCount}</span> Answered
                 </span>
               </div>
             )}
             <div className="flex items-center gap-2 text-sm">
               <FileText className="h-4 w-4 text-blue-500" />
               <span className="text-gray-600">
-                <span className="font-medium text-blue-700">{draftRfqCount}</span> Rascunhos de RFQ
+                <span className="font-medium text-blue-700">{draftRfqCount}</span> RFQ Drafts
               </span>
             </div>
             {unassignedCount > 0 && (
               <div className="flex items-center gap-2 text-sm">
                 <AlertCircle className="h-4 w-4 text-orange-500" />
                 <span className="text-gray-600">
-                  <span className="font-medium text-orange-700">{unassignedCount}</span> Não atribuídos
+                  <span className="font-medium text-orange-700">{unassignedCount}</span> Unassigned
                 </span>
               </div>
             )}
@@ -542,31 +542,31 @@ const CartPage: React.FC = () => {
           <div className="flex flex-wrap gap-2">
             {unassignedCount > 0 && (
               <button onClick={selectAllUnassigned} className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
-                <CheckSquare className="h-4 w-4" /> Selecionar Todos
+                <CheckSquare className="h-4 w-4" /> Select All
               </button>
             )}
             {selectedItems.length > 0 && (
               <>
                 <button onClick={clearSelection} className="px-3 py-1.5 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors">
-                  Limpar Seleção
+                  Clear Selection
                 </button>
                 <button onClick={() => setShowRfqModal(true)} className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1">
-                  <Plus className="h-4 w-4" /> Adicionar à RFQ ({selectedItems.length})
+                  <Plus className="h-4 w-4" /> Add to RFQ ({selectedItems.length})
                 </button>
               </>
             )}
             <button onClick={() => setShowRfqModal(true)} className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1">
-              <Plus className="h-4 w-4" /> Criar RFQ
+              <Plus className="h-4 w-4" /> Create RFQ
             </button>
           </div>
         </div>
       </section>
 
-      {/* CONTEÚDO */}
+      {/* CONTENT */}
       <section className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          {/* ── BANNER DE RESPOSTAS DE RFQ ── */}
+          {/* ── RFQ RESPONSES BANNER ── */}
           <RfqResponseBanner
             responses={rfqResponses}
             onDismiss={handleDismissBanner}
@@ -575,14 +575,14 @@ const CartPage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* LISTA */}
+            {/* LIST */}
             <div className="lg:col-span-2 space-y-4">
               {cartItems.length === 0 && (
                 <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100">
                   <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 text-lg font-medium">O seu carrinho está vazio.</p>
+                  <p className="text-gray-500 text-lg font-medium">Your cart is empty.</p>
                   <a href="/products" className="mt-4 inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                    Ver Produtos
+                    View Products
                   </a>
                 </div>
               )}
@@ -591,7 +591,7 @@ const CartPage: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-orange-500" />
-                    Produtos Não Atribuídos ({unassignedCount})
+                    Unassigned Products ({unassignedCount})
                   </h3>
                   <div className="space-y-3">
                     {cartItems.filter(item => !item.rfqId).map(item => (
@@ -641,12 +641,12 @@ const CartPage: React.FC = () => {
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <h3 className="text-lg font-bold text-gray-800 truncate">{rfq?.name || '…'}</h3>
-                            {/* Ponto de notificação quando existe resposta não lida */}
+                            {/* Notification dot when unread response exists */}
                             {hasResponse && (
-                              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse flex-shrink-0" title="Nova resposta disponível" />
+                              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse flex-shrink-0" title="New response available" />
                             )}
                           </div>
-                          <p className="text-sm text-gray-500">{rfq?.date} • {items.length} itens</p>
+                          <p className="text-sm text-gray-500">{rfq?.date} • {items.length} items</p>
                         </div>
                       </div>
 
@@ -655,7 +655,7 @@ const CartPage: React.FC = () => {
                           <button
                             onClick={e => { e.stopPropagation(); setShowInfoModal({ open: true, rfqId }); }}
                             className="p-2 text-blue-600 hover:bg-blue-100 rounded-full transition-colors"
-                            title="Informações do pedido"
+                            title="Order information"
                           >
                             <Info className="h-5 w-5" />
                           </button>
@@ -676,33 +676,33 @@ const CartPage: React.FC = () => {
                             onClick={e => { e.stopPropagation(); handleSubmitRfq(rfqId); }}
                             className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
                           >
-                            Fechar Pedido
+                            Submit Order
                           </button>
                         )}
 
-                        {/* Botão Ver Resposta em RFQs completed */}
+                        {/* View Response button for completed RFQs */}
                         {isCompleted && (
                           <button
                             onClick={e => { e.stopPropagation(); navigate('/userprofile?tab=messages'); }}
                             className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
                           >
                             <Mail className="h-4 w-4" />
-                            Ver Resposta
+                            View Response
                           </button>
                         )}
                       </div>
                     </div>
 
-                    {/* Faixa de resposta disponível */}
+                    {/* Available response banner */}
                     {isCompleted && hasResponse && (
                       <div className="mx-4 mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-sm text-blue-800">
                         <Bell className="h-4 w-4 flex-shrink-0 text-blue-500" />
-                        <span>A equipa comercial respondeu à sua cotação.</span>
+                        <span>The sales team responded to your quote.</span>
                         <button
                           onClick={() => navigate('/userprofile?tab=messages')}
                           className="ml-auto text-xs font-semibold text-blue-700 underline hover:no-underline"
                         >
-                          Ver Mensagens
+                          View Messages
                         </button>
                       </div>
                     )}
@@ -729,11 +729,11 @@ const CartPage: React.FC = () => {
               })}
             </div>
 
-            {/* PAINEL LATERAL */}
+            {/* SIDEBAR PANEL */}
             <div className="hidden lg:block lg:col-span-1">
               <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-24 border border-gray-100">
                 <h2 className="text-xl font-bold text-gray-800 mb-6">
-                  {selectedRfqId ? 'Detalhes da RFQ' : selectedProduct ? 'Detalhes do Produto' : 'Selecione um item'}
+                  {selectedRfqId ? 'RFQ Details' : selectedProduct ? 'Product Details' : 'Select an item'}
                 </h2>
                 {selectedRfqId ? (
                   <RfqDetails rfqId={selectedRfqId} items={groupedItems[selectedRfqId] || []} rfqList={rfqList} rfqResponses={rfqResponses} getStatusInfo={getStatusInfo} onViewMessages={() => navigate('/userprofile?tab=messages')} />
@@ -742,7 +742,7 @@ const CartPage: React.FC = () => {
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     <Package className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                    <p className="text-sm">Clique em um produto ou RFQ para ver os detalhes</p>
+                    <p className="text-sm">Click on a product or RFQ to see details</p>
                   </div>
                 )}
               </div>
@@ -751,12 +751,12 @@ const CartPage: React.FC = () => {
         </div>
       </section>
 
-      {/* MODAL PRODUTO (Mobile) */}
+      {/* PRODUCT MODAL (Mobile) */}
       {showProductModal && selectedProduct && isMobile && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-800">Detalhes do Produto</h2>
+              <h2 className="text-lg font-bold text-gray-800">Product Details</h2>
               <button onClick={() => setShowProductModal(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <X className="h-5 w-5 text-gray-500" />
               </button>
@@ -768,7 +768,7 @@ const CartPage: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL RFQ */}
+      {/* RFQ MODAL */}
       {showRfqModal && (
         <RfqModal
           selectedCount={selectedItems.length}
@@ -779,7 +779,7 @@ const CartPage: React.FC = () => {
         />
       )}
 
-      {/* MODAL INFORMAÇÃO RFQ */}
+      {/* RFQ INFO MODAL */}
       {showInfoModal.open && showInfoModal.rfqId && (() => {
         const rfq = rfqList.find(r => r.id === showInfoModal.rfqId);
         const response = rfqResponses.find(r => r.rfq_id === showInfoModal.rfqId);
@@ -797,24 +797,24 @@ const CartPage: React.FC = () => {
                     }
                   </div>
                   <h3 className="text-xl font-bold text-gray-800 mb-2">
-                    {isCompleted ? 'Cotação Respondida' : 'Pedido Recebido'}
+                    {isCompleted ? 'Quote Answered' : 'Request Received'}
                   </h3>
                   <p className="text-gray-600">
                     {isCompleted
-                      ? `A sua cotação "${rfq?.name}" foi respondida pela equipa comercial.`
-                      : `Recebemos o pedido "${rfq?.name}". Estamos a analisar.`
+                      ? `Your quote "${rfq?.name}" has been answered by the sales team.`
+                      : `We received your request "${rfq?.name}". We are reviewing it.`
                     }
                   </p>
                 </div>
 
-                {/* Detalhes da resposta */}
+                {/* Response details */}
                 {isCompleted && response && (
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 space-y-2">
                     <p className="text-sm text-blue-800 line-clamp-3">{response.message}</p>
                     {response.attachments && response.attachments.length > 0 && (
                       <div className="space-y-1 pt-2 border-t border-blue-200">
                         <p className="text-xs font-semibold text-blue-700 flex items-center gap-1">
-                          <Paperclip className="h-3 w-3" /> Anexos ({response.attachments.length})
+                          <Paperclip className="h-3 w-3" /> Attachments ({response.attachments.length})
                         </p>
                         {response.attachments.map((att, idx) => (
                           <a
@@ -836,9 +836,9 @@ const CartPage: React.FC = () => {
                 {!isCompleted && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                     <p className="text-sm text-green-800">
-                      📧 A nossa equipa comercial analisará a sua solicitação e enviará uma cotação completa.
+                      📧 Our sales team will review your request and send a complete quote.
                       <br /><br />
-                      🔔 Poderá acompanhar o estado na aba <strong>"Mensagens"</strong> do seu perfil.
+                      🔔 You can track the status in the <strong>"Messages"</strong> tab of your profile.
                     </p>
                   </div>
                 )}
@@ -848,13 +848,13 @@ const CartPage: React.FC = () => {
                     onClick={() => setShowInfoModal({ open: false, rfqId: null })}
                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    Fechar
+                    Close
                   </button>
                   <button
                     onClick={() => { navigate('/userprofile?tab=messages'); setShowInfoModal({ open: false, rfqId: null }); }}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    Ver Mensagens
+                    View Messages
                   </button>
                 </div>
               </div>
@@ -940,7 +940,7 @@ function ProductCard({
           <button
             onClick={e => { e.stopPropagation(); onViewDetails(item); }}
             className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-            title="Ver Detalhes"
+            title="View Details"
           >
             <Eye className="h-5 w-5" />
           </button>
@@ -948,13 +948,13 @@ function ProductCard({
             <button
               onClick={e => { e.stopPropagation(); onRemoveFromRfq(); }}
               className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-              title="Remover da RFQ"
+              title="Remove from RFQ"
             >
               <Trash2 className="h-5 w-5" />
             </button>
           )}
           {isRfqSubmitted && (
-            <div className="p-2 text-gray-400" title="RFQ enviada — não pode ser modificada">
+            <div className="p-2 text-gray-400" title="RFQ submitted — cannot be modified">
               <Lock className="h-5 w-5" />
             </div>
           )}
@@ -985,11 +985,11 @@ function ProductDetails({
         <p className="text-gray-600 mb-4">{product.brand} • {product.model}</p>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-500">Código:</span>
+            <span className="text-gray-500">Code:</span>
             <span className="font-medium">{product.cod}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Categoria:</span>
+            <span className="text-gray-500">Category:</span>
             <span className="font-medium">{product.category}</span>
           </div>
         </div>
@@ -1008,14 +1008,14 @@ function ProductDetails({
 
       {product.description && (
         <div>
-          <h4 className="font-semibold text-gray-800 mb-2">Descrição</h4>
+          <h4 className="font-semibold text-gray-800 mb-2">Description</h4>
           <p className="text-gray-700 text-sm leading-relaxed">{product.description}</p>
         </div>
       )}
 
       {product.features && product.features.length > 0 && (
         <div>
-          <h4 className="font-semibold text-gray-800 mb-2">Características</h4>
+          <h4 className="font-semibold text-gray-800 mb-2">Features</h4>
           <ul className="space-y-1">
             {product.features.map((feature: string, index: number) => (
               <li key={index} className="text-gray-700 text-sm flex items-start gap-2">
@@ -1029,14 +1029,14 @@ function ProductDetails({
 
       {product.rfqId && (
         <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="font-semibold text-gray-800 mb-2">Informações da RFQ</h4>
+          <h4 className="font-semibold text-gray-800 mb-2">RFQ Information</h4>
           <div className="text-sm space-y-1">
             <div className="flex justify-between">
               <span className="text-gray-500">RFQ ID:</span>
               <span className="font-medium font-mono text-xs">{product.rfqId.substring(0, 8)}…</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Adicionado em:</span>
+              <span className="text-gray-500">Added on:</span>
               <span className="font-medium">{product.addedDate}</span>
             </div>
           </div>
@@ -1049,13 +1049,13 @@ function ProductDetails({
         onClick={e => e.stopPropagation()}
       >
         <ExternalLink className="h-4 w-4" />
-        Ver Página do Produto
+        View Product Page
       </a>
     </div>
   );
 }
 
-// ===== RFQ DETAILS (painel lateral) =====
+// ===== RFQ DETAILS (sidebar panel) =====
 function RfqDetails({
   rfqId, items, rfqList, rfqResponses, getStatusInfo, onViewMessages
 }: {
@@ -1072,7 +1072,7 @@ function RfqDetails({
   const isCompleted = rfq?.status === 'completed';
 
   const statusCounts = items.reduce<Record<string, number>>((acc, it) => {
-    const key = it.status || 'Sem Status';
+    const key = it.status || 'No Status';
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
@@ -1081,13 +1081,13 @@ function RfqDetails({
     <div className="space-y-5">
       {firstImage && (
         <div className="text-center">
-          <img src={firstImage} alt="Produto da RFQ" className="w-full max-w-48 h-48 object-cover rounded-lg shadow-lg mx-auto" />
+          <img src={firstImage} alt="RFQ Product" className="w-full max-w-48 h-48 object-cover rounded-lg shadow-lg mx-auto" />
         </div>
       )}
       <div>
         <h3 className="text-xl font-bold text-gray-800 mb-2">{rfq?.name || '…'}</h3>
         <div className="flex items-center gap-2 text-sm flex-wrap">
-          <span className="px-3 py-1 rounded-full bg-gray-100 font-medium text-gray-700">{items.length} produtos</span>
+          <span className="px-3 py-1 rounded-full bg-gray-100 font-medium text-gray-700">{items.length} products</span>
           {rfq?.status && (
             <span className={`px-3 py-1 rounded-full font-medium text-sm ${getStatusInfo(null, rfq.status).color}`}>
               {getStatusInfo(null, rfq.status).label}
@@ -1097,10 +1097,10 @@ function RfqDetails({
       </div>
 
       <div>
-        <h4 className="font-semibold text-gray-800 mb-2">Estado dos Produtos</h4>
+        <h4 className="font-semibold text-gray-800 mb-2">Product Status</h4>
         <div className="flex flex-wrap gap-2">
           {Object.entries(statusCounts).map(([status, count]) => {
-            const info = getStatusInfo(status === 'Sem Status' ? null : status);
+            const info = getStatusInfo(status === 'No Status' ? null : status);
             return (
               <span key={status} className={`px-3 py-1 text-sm rounded-full ${info.color}`}>
                 {status}: {count}
@@ -1110,19 +1110,19 @@ function RfqDetails({
         </div>
       </div>
 
-      {/* Resposta do admin no painel lateral */}
+      {/* Admin response in sidebar panel */}
       {isCompleted && response && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-blue-600" />
-            <p className="text-sm font-semibold text-blue-800">Resposta da Equipa Comercial</p>
+            <p className="text-sm font-semibold text-blue-800">Sales Team Response</p>
           </div>
           <p className="text-sm text-blue-700 line-clamp-4">{response.message}</p>
 
           {response.attachments && response.attachments.length > 0 && (
             <div className="space-y-1 pt-2 border-t border-blue-200">
               <p className="text-xs font-semibold text-blue-700 flex items-center gap-1">
-                <Paperclip className="h-3 w-3" /> {response.attachments.length} anexo(s)
+                <Paperclip className="h-3 w-3" /> {response.attachments.length} attachment(s)
               </p>
               {response.attachments.map((att, idx) => (
                 <a
@@ -1143,7 +1143,7 @@ function RfqDetails({
             onClick={onViewMessages}
             className="w-full text-center text-xs font-semibold text-blue-700 hover:text-blue-900 py-1 border-t border-blue-200 pt-2"
           >
-            Ver conversa completa →
+            View full conversation →
           </button>
         </div>
       )}
@@ -1153,7 +1153,7 @@ function RfqDetails({
           <div className="flex items-start gap-3">
             <Info className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-green-800">
-              Esta RFQ já foi enviada para análise comercial. Não é possível adicionar ou remover itens.
+              This RFQ has already been sent for commercial review. Items cannot be added or removed.
             </p>
           </div>
         </div>
@@ -1188,7 +1188,7 @@ function RfqModal({
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-gray-800">
-              {selectedCount > 0 ? `Adicionar ${selectedCount} produto(s) à RFQ` : 'Criar RFQ'}
+              {selectedCount > 0 ? `Add ${selectedCount} product(s) to RFQ` : 'Create RFQ'}
             </h3>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <X className="h-5 w-5 text-gray-500" />
@@ -1196,10 +1196,10 @@ function RfqModal({
           </div>
 
           <div className="mb-6">
-            <h4 className="font-semibold text-gray-700 mb-3">Criar Nova RFQ</h4>
+            <h4 className="font-semibold text-gray-700 mb-3">Create New RFQ</h4>
             <input
               type="text"
-              placeholder="Nome do projeto / RFQ"
+              placeholder="Project / RFQ name"
               value={rfqName}
               onChange={e => setRfqName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleCreate()}
@@ -1212,13 +1212,13 @@ function RfqModal({
               className="w-full mt-3 bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 transition-colors flex items-center justify-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              {creating ? 'Criando…' : 'Criar Nova RFQ'}
+              {creating ? 'Creating…' : 'Create New RFQ'}
             </button>
           </div>
 
           {rfqList.length > 0 && selectedCount > 0 && (
             <div>
-              <h4 className="font-semibold text-gray-700 mb-3">Adicionar a RFQ Existente</h4>
+              <h4 className="font-semibold text-gray-700 mb-3">Add to Existing RFQ</h4>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {rfqList.map(rfq => (
                   <button
@@ -1227,7 +1227,7 @@ function RfqModal({
                     className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
                   >
                     <div className="font-medium text-gray-800">{rfq.name}</div>
-                    <div className="text-sm text-gray-500">{rfq.date} • {rfq.itemCount} itens</div>
+                    <div className="text-sm text-gray-500">{rfq.date} • {rfq.itemCount} items</div>
                   </button>
                 ))}
               </div>

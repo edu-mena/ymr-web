@@ -19,6 +19,7 @@ type UserHeaderProps = {
   activeTab: string;
   setActiveTab: (tabId: string) => void;
   onAvatarClick?: () => void;
+  lastActivity?: { title?: string; occurredAt?: string };
 };
 
 export default function UserHeader({ userData, activeTab, setActiveTab, onAvatarClick }: UserHeaderProps) {

@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+# Public pages
+Allow: /products
+Allow: /services
+Allow: /about
+Allow: /contact
+Allow: /company
+Allow: /blog
+
+# Protect private areas
+Disallow: /settings
+Disallow: /profile
+Disallow: /cart
+Disallow: /catalog
+
+# Sitemap
+Sitemap: https://ymrindustrial.com/sitemap.xml

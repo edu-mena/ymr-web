@@ -15,9 +15,9 @@ export default function AsideVerticalSlider({ images, delay = 5000 }: Props) {
         </div>
       ))}
 
-      <div className="flex justify-center gap-2 py-3 bg-white dark:bg-gray-800">
+      <div className="flex justify-center gap-2 py-3 bg-white">
         {images.map((_, i) => (
-          <button key={i} onClick={() => goTo(i)} className={`w-2 h-2 rounded-full ${index === i ? 'bg-gray-800 dark:bg-gray-200' : 'bg-gray-300 dark:bg-gray-600'}`} />
+          <button key={i} onClick={() => goTo(i)} className={`w-2 h-2 rounded-full ${index === i ? 'bg-gray-800' : 'bg-gray-300'}`} />
         ))}
       </div>
     </div>
